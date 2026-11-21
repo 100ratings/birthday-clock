@@ -128,26 +128,51 @@ $('next').onclick = () => {
   render();
 };
 $('settings').onclick = () => {
-  $('endpoint').value = config.endpoint || '';
-  $('password').value = config.password || '';
+  $('pair-code').value = '';
+  renderConnection();
   $('inject-id').value = config.injectId || '';
   $('config').showModal();
   checkForUpdate();
 };
 $('config').addEventListener('close', () => {
   if ($('config').returnValue !== 'save') return;
+  config.injectId = $('inject-id').value.trim();
+  localStorage.setItem(configKey,JSON.stringify(config));
+  syncAlarm();
+});
+
+function renderConnection() {
+  $('pair-fields').hidden = Boolean(config.password);
+  $('connection-status').textContent = config.password ? 'Conectado' : 'Conecte este aparelho para marcar avisos';
+}
+
+$('pair-button').onclick = async () => {
+  const code = $('pair-code').value.trim().toLowerCase();
+  if (!/^[a-f0-9]{32}$/.test(code)) {
+    $('connection-status').textContent = 'Cole o código de conexão completo';
+    return;
+  }
+  $('pair-button').disabled = true;
   try {
-    const value = new URL($('endpoint').value.trim());
-    if (value.protocol !== 'https:') throw Error();
-    config.endpoint = value.origin;
-    config.password = $('password').value.trim();
+    const response = await fetch(config.endpoint + '/pair', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code})
+    });
+    const result = await response.json();
+    if (!response.ok || !result.password) throw Error(result.error || 'Não foi possível conectar');
+    config.password = result.password;
     config.injectId = $('inject-id').value.trim();
     localStorage.setItem(configKey,JSON.stringify(config));
-    alarm = null;
-    render();
+    $('pair-code').value = '';
+    renderConnection();
     syncAlarm();
-  } catch { $('notice').textContent = 'Informe o endereço HTTPS do Worker'; }
-});
+  } catch (error) {
+    $('connection-status').textContent = error.message;
+  } finally {
+    $('pair-button').disabled = false;
+  }
+};
 document.addEventListener('visibilitychange', () => { if (!document.hidden) reopen(); });
 window.addEventListener('pageshow', event => { if (event.persisted) reopen(); });
 try {

@@ -7,9 +7,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <title>Birthday Clock</title>
-<script src="app.js?v=4" type="module"></script>
+<script src="app.js?v=5" type="module"></script>
 </head>
 <body><main>
 <header><h1>Birthday Clock</h1><button id="settings" type="button">Ajustes</button></header>
@@ -23,8 +23,11 @@
 <button id="update-app" type="button">Atualizar app</button>
 <p id="update-status" role="status"></p>
 <h2>Avisos pelo Pushover</h2>
-<label>Endereço do Worker<input id="endpoint" type="url" placeholder="https://birthday-clock.omentalistademian.workers.dev"></label>
-<label>Senha do app<input id="password" type="password" autocomplete="off"></label>
+<p id="connection-status" role="status"></p>
+<div id="pair-fields">
+<label>Código de conexão<input id="pair-code" type="text" autocapitalize="none" spellcheck="false" autocomplete="off" placeholder="Cole o código aqui"></label>
+<button id="pair-button" type="button">Conectar iPhone</button>
+</div>
 <h2>Inject API</h2>
 <label>Seu ID oculto<input id="inject-id" type="text" inputmode="numeric" pattern="[0-9]{1,12}" maxlength="12" placeholder="1234" autocomplete="off"></label>
 <button value="save">Salvar</button><button value="cancel" formnovalidate>Cancelar</button>

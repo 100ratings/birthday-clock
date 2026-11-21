@@ -7,7 +7,7 @@ const lead = 180_000;
 export default {
   async fetch(request, env) {
     const {pathname} = new URL(request.url);
-    if (pathname !== '/alarm') return new Response('Not found',{status:404});
+    if (!['/alarm','/pair'].includes(pathname)) return new Response('Not found',{status:404});
 
     const headers = {
       'Access-Control-Allow-Origin':env.APP_ORIGIN,
@@ -18,9 +18,19 @@ export default {
     };
     const reply = (data,status) => Response.json(data,{status,headers});
     if (request.method === 'OPTIONS') return new Response(null,{status:204,headers});
+    const alarm = env.ALARMS.get(env.ALARMS.idFromName('owner'));
+    if (pathname === '/pair' && request.method === 'POST' && env.APP_PASSWORD) {
+      if (request.headers.get('Authorization') === 'Bearer ' + env.APP_PASSWORD)
+        return reply(await alarm.newPairCode(),200);
+      try {
+        const {code} = await request.json();
+        if (typeof code === 'string' && /^[a-f0-9]{32}$/.test(code) && await alarm.claimPairCode(code))
+          return reply({password:env.APP_PASSWORD},200);
+      } catch {}
+      return reply({error:'Código inválido, usado ou vencido'},401);
+    }
     if (!env.APP_PASSWORD || request.headers.get('Authorization') !== 'Bearer ' + env.APP_PASSWORD)
       return reply({error:'Senha do app inválida'},401);
-    const alarm = env.ALARMS.get(env.ALARMS.idFromName('owner'));
     try {
       if (request.method === 'GET') return reply({alarm:await alarm.status()},200);
       if (request.method === 'DELETE') return reply({alarm:await alarm.cancel()},200);
@@ -68,6 +78,22 @@ async function sendToInject(id, name) {
 }
 
 export class BirthdayAlarm extends DurableObject {
+  async newPairCode() {
+    const code = crypto.randomUUID().replaceAll('-','');
+    const expires = Date.now() + 15 * 60_000;
+    await this.ctx.storage.put('pair',{code,expires});
+    return {code,expires};
+  }
+
+  async claimPairCode(code) {
+    return this.ctx.blockConcurrencyWhile(async () => {
+      const pair = await this.ctx.storage.get('pair');
+      if (!pair || pair.code !== code || pair.expires <= Date.now()) return false;
+      await this.ctx.storage.delete('pair');
+      return true;
+    });
+  }
+
   async status() {
     return (await this.ctx.storage.get('alarm')) ?? null;
   }
