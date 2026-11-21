@@ -5,7 +5,18 @@ const clock = new Intl.DateTimeFormat('pt-BR', {hour:'2-digit', minute:'2-digit'
 const months = 'janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro'.split(' ');
 const configKey = 'birthday-clock-config';
 const config = {endpoint:'https://birthday-clock.omentalistademian.workers.dev', ...JSON.parse(localStorage.getItem(configKey) || '{}')};
+const alarmCacheKey = 'birthday-clock-alarm';
 let birthdays, featured, alarm, busy = false;
+try {
+  const cached = JSON.parse(localStorage.getItem(alarmCacheKey) || 'null');
+  if (config.password && cached?.notifyAt > Date.now()) alarm = cached;
+} catch {}
+
+function saveAlarm(value) {
+  alarm = value;
+  if (value) localStorage.setItem(alarmCacheKey,JSON.stringify(value));
+  else localStorage.removeItem(alarmCacheKey);
+}
 
 function opportunity(at) {
   const date = new Date(at);
@@ -79,20 +90,20 @@ function render() {
 async function api(method = 'GET', payload) {
   if (!config.endpoint || !config.password) throw Error('Conecte o Cloudflare em Ajustes para usar os avisos');
   const response = await fetch(config.endpoint + '/alarm', {
-    method, headers:{Authorization:'Bearer ' + config.password,'Content-Type':'application/json'},
+    method, signal:AbortSignal.timeout(12_000), headers:{Authorization:'Bearer ' + config.password,'Content-Type':'application/json'},
     body:payload ? JSON.stringify(payload) : undefined
   });
   const result = await response.json();
   if (response.status === 401) {
     delete config.password;
     localStorage.setItem(configKey,JSON.stringify(config));
-    alarm = null;
+    saveAlarm(null);
     renderConnection();
     render();
     throw Error('Reconecte este aparelho em Ajustes');
   }
   if (!response.ok) throw Error(result.error || 'Não foi possível acessar os avisos');
-  alarm = result.alarm;
+  saveAlarm(result.alarm);
   return result;
 }
 
@@ -213,7 +224,10 @@ try {
   const response = await fetch('./aniversarios.txt');
   if (!response.ok) throw Error();
   birthdays = Object.fromEntries((await response.text()).trim().split(/\r?\n/).map(line => line.split('|')));
-  reopen();
+  [featured] = opportunities(Date.now());
+  if (alarm) render();
+  await syncAlarm();
+  render();
   setInterval(() => { if (!document.hidden) render(); },1000);
   setInterval(() => { if (!document.hidden) syncAlarm(); },15000);
 
