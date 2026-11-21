@@ -77,7 +77,18 @@ function render() {
   const now = Date.now();
   const [featured, ...others] = opportunities(now);
   if (!featured) return;
-  $('current').replaceChildren(card(featured,now));
+  const featuredCard = card(featured,now);
+  const today = new Date(now);
+  const todayCode = String(today.getDate()).padStart(2,'0') + String(today.getMonth() + 1).padStart(2,'0');
+  if (birthdays[todayCode]) {
+    const todayBirthday = element('div','','today-birthday');
+    todayBirthday.append(
+      element('small','Aniversariante de hoje · ' + today.getDate() + ' de ' + months[today.getMonth()],'today-birthday-label'),
+      element('strong',birthdays[todayCode],'today-birthday-name')
+    );
+    featuredCard.append(todayBirthday);
+  }
+  $('current').replaceChildren(featuredCard);
   $('upcoming').replaceChildren(...others.map(item => card(item,now)));
   $('alarm').hidden = !alarm;
   $('alarm').replaceChildren();
