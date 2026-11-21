@@ -6,6 +6,7 @@ const configKey = 'birthday-clock-config';
 const config = {endpoint:'https://birthday-clock.omentalistademian.workers.dev', ...JSON.parse(localStorage.getItem(configKey) || '{}')};
 const alarmCacheKey = 'birthday-clock-alarm';
 let birthdays, alarm, busy = false;
+let dateMode = 'DDMM';
 try {
   const cached = JSON.parse(localStorage.getItem(alarmCacheKey) || 'null');
   if (config.password && cached?.notifyAt > Date.now()) alarm = cached;
@@ -19,9 +20,11 @@ function saveAlarm(value) {
 
 function opportunity(at) {
   const date = new Date(at);
-  const day = date.getHours(), month = date.getMinutes();
+  const hour = date.getHours(), minuteOfHour = date.getMinutes();
+  const day = dateMode === 'DDMM' ? hour : minuteOfHour;
+  const month = dateMode === 'DDMM' ? minuteOfHour : hour;
   const code = String(day).padStart(2,'0') + String(month).padStart(2,'0');
-  return birthdays[code] && {at, code, name:birthdays[code], label:clock.format(date), birthday:day + ' de ' + months[month - 1]};
+  return birthdays[code] && {at, code, mode:dateMode, name:birthdays[code], label:clock.format(date), birthday:day + ' de ' + months[month - 1]};
 }
 
 function opportunities(now) {
@@ -52,18 +55,19 @@ function card(item, now) {
   const node = element('article','');
   const delta = item.at - now;
   const forward = delta > 0;
+  const isMarked = alarm?.at === item.at && alarm?.code === item.code;
   const state = forward ? 'Em ' + Math.ceil(delta / minute) + ' min' : 'Agora';
   const row = element('div','','row');
   row.append(element('time',item.label),element('small',state));
   node.append(row,element('p',''));
   node.lastElementChild.append(element('strong',item.name));
   node.append(element('small',item.birthday));
-  if (forward && alarm?.at !== item.at) {
+  if (forward && !isMarked) {
     const actions = element('div','','actions');
     const label = delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
     actions.append(button(label, () => schedule(item), true));
     node.append(actions);
-  } else if (alarm?.at === item.at) node.append(element('p','Aviso marcado'));
+  } else if (isMarked) node.append(element('p','Aviso marcado'));
   return node;
 }
 
@@ -121,7 +125,7 @@ async function update(action) {
 function schedule(item) {
   if (!config.endpoint || !config.password) { $('settings').click(); return; }
   update(async () => {
-    const result = await api('PUT',{at:item.at,code:item.code,zone:Intl.DateTimeFormat().resolvedOptions().timeZone,leadMinutes:config.leadMinutes ?? 3,atTime:config.atTime ?? false});
+    const result = await api('PUT',{at:item.at,code:item.code,mode:item.mode,zone:Intl.DateTimeFormat().resolvedOptions().timeZone,leadMinutes:config.leadMinutes ?? 3,atTime:config.atTime ?? false});
     const message = result.sent ? 'Aviso enviado ao Pushover' : 'Aviso marcado para ' + clock.format(result.alarm.notifyAt);
     if (!config.injectId) return message;
     try {
@@ -158,6 +162,10 @@ function cancel() {
 
 function reopen() {
   if (!birthdays) return;
+  if (dateMode !== 'DDMM') {
+    dateMode = 'DDMM';
+    renderDateMode();
+  }
   render();
   syncAlarm();
 }
@@ -167,6 +175,20 @@ async function syncAlarm() {
   try { await api(); render(); }
   catch (error) { $('notice').textContent = error.message; }
 }
+
+function renderDateMode() {
+  const control = $('date-mode');
+  control.textContent = dateMode === 'DDMM' ? 'DD/MM' : 'MM/DD';
+  control.setAttribute('aria-pressed',String(dateMode === 'MMDD'));
+  control.setAttribute('aria-label',dateMode === 'DDMM' ? 'Modo dia e mês. Toque para inverter' : 'Modo mês e dia. Toque para voltar');
+}
+
+$('date-mode').onclick = () => {
+  dateMode = dateMode === 'DDMM' ? 'MMDD' : 'DDMM';
+  renderDateMode();
+  render();
+};
+renderDateMode();
 
 $('settings').onclick = () => {
   $('pair-code').value = '';
