@@ -82,9 +82,15 @@ function render() {
   const todayCode = String(today.getDate()).padStart(2,'0') + String(today.getMonth() + 1).padStart(2,'0');
   if (birthdays[todayCode]) {
     const todayBirthday = element('div','','today-birthday');
+    const todayRow = element('div','','today-birthday-row');
+    todayRow.append(
+      element('strong',birthdays[todayCode],'today-birthday-name'),
+      button('Enviar ao Inject',() => resendInject(birthdays[todayCode]))
+    );
+    todayRow.lastElementChild.classList.add('today-inject-button');
     todayBirthday.append(
       element('small','Aniversariante de hoje · ' + today.getDate() + ' de ' + months[today.getMonth()],'today-birthday-label'),
-      element('strong',birthdays[todayCode],'today-birthday-name')
+      todayRow
     );
     featuredCard.append(todayBirthday);
   }
