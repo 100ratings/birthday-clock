@@ -11,7 +11,7 @@ export default {
 
     const headers = {
       'Access-Control-Allow-Origin':env.APP_ORIGIN,
-      'Access-Control-Allow-Methods':'GET, PUT, POST, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods':'GET, PUT, PATCH, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers':'Authorization, Content-Type',
       'Cache-Control':'no-store',
       'Vary':'Origin'
@@ -38,13 +38,14 @@ export default {
         await alarm.send({label:'Teste imediato',name:'Enviado pelo Birthday Clock'});
         return reply({sent:true},200);
       }
-      if (request.method !== 'PUT') return reply({error:'Método inválido'},405);
+      if (!['PUT','PATCH'].includes(request.method)) return reply({error:'Método inválido'},405);
       if (!env.PUSHOVER_TOKEN || !env.PUSHOVER_USER)
         return reply({error:'Configure as chaves do Pushover no Cloudflare'},503);
 
       const {at,code,zone,injectId,leadMinutes = 3,atTime = false} = await request.json();
       if (!Number.isInteger(leadMinutes) || leadMinutes < 1 || leadMinutes > 60 || typeof atTime !== 'boolean')
         return reply({error:'Configuração de aviso inválida'},400);
+      if (request.method === 'PATCH') return reply({alarm:await alarm.configure(leadMinutes,atTime)},200);
       if (injectId !== undefined && (typeof injectId !== 'string' || !/^[0-9]{1,12}$/.test(injectId)))
         return reply({error:'ID do Inject inválido'},400);
       const now = Date.now();
@@ -97,7 +98,8 @@ export class BirthdayAlarm extends DurableObject {
   }
 
   async status() {
-    return (await this.ctx.storage.get('alarm')) ?? null;
+    const item = await this.ctx.storage.get('alarm');
+    return item && (!item.advanceDone || item.atTime) ? item : null;
   }
 
   async cancel() {
@@ -108,31 +110,36 @@ export class BirthdayAlarm extends DurableObject {
     return null;
   }
 
+  async configure(leadMinutes, atTime) {
+    return this.ctx.blockConcurrencyWhile(async () => {
+      const store = this.ctx.storage;
+      const item = await store.get('alarm');
+      if (!item || item.at <= Date.now()) return this.status();
+      const advanceDone = item.advanceDone ?? item.notifyAt === item.at;
+      const notifyAt = advanceDone ? item.at : item.at - leadMinutes * minute;
+      const next = {...item,atTime,notifyAt,advanceDone};
+      await store.put('alarm',next);
+      await store.setAlarm(Math.max(notifyAt,Date.now()));
+      return this.status();
+    });
+  }
+
   async schedule(item) {
     return this.ctx.blockConcurrencyWhile(async () => {
       const store = this.ctx.storage;
-      if (item.notifyAt <= Date.now()) {
-        await this.send(item);
-        if (item.atTime) {
-          const next = {...item,notifyAt:item.at};
-          await store.put('alarm',next);
-          await store.setAlarm(next.notifyAt);
-          return {alarm:next,sent:true};
-        }
-        await store.delete('alarm');
-        await store.deleteAlarm();
-        return {alarm:null,sent:true};
-      }
-      await store.put('alarm',item);
-      await store.setAlarm(item.notifyAt);
-      return {alarm:item,sent:false};
+      const sent = item.notifyAt <= Date.now();
+      if (sent) await this.send(item);
+      const next = sent ? {...item,notifyAt:item.at,advanceDone:true} : item;
+      await store.put('alarm',next);
+      await store.setAlarm(Math.max(next.notifyAt,Date.now()));
+      return {alarm:await this.status(),sent};
     });
   }
 
   async alarm() {
     await this.ctx.blockConcurrencyWhile(async () => {
       const store = this.ctx.storage;
-      const item = await this.status();
+      const item = await store.get('alarm');
       if (!item) return;
       const now = Date.now();
       if (now < item.notifyAt) {
@@ -140,23 +147,23 @@ export class BirthdayAlarm extends DurableObject {
         return;
       }
 
-      const isAdvance = item.notifyAt < item.at;
-      if (now < (isAdvance ? item.at : item.at + 3 * minute)) await this.send(item);
-      if (isAdvance && item.atTime) {
-        const next = {...item,notifyAt:item.at};
+      if (item.notifyAt < item.at) {
+        if (now < item.at) await this.send(item);
+        const next = {...item,notifyAt:item.at,advanceDone:true};
         await store.put('alarm',next);
         await store.setAlarm(Math.max(next.notifyAt,Date.now()));
-      } else {
-        await store.delete('alarm');
+        return;
       }
+      if (item.atTime && now < item.at + 3 * minute) await this.send(item,'Birthday Clock · Agora');
+      await store.delete('alarm');
     });
   }
 
-  async send(item) {
+  async send(item, title = 'Birthday Clock') {
     const message = item.label + ' · ' + item.name;
     const response = await fetch('https://api.pushover.net/1/messages.json',{
       method:'POST',
-      body:new URLSearchParams({token:this.env.PUSHOVER_TOKEN,user:this.env.PUSHOVER_USER,title:'Birthday Clock',message}),
+      body:new URLSearchParams({token:this.env.PUSHOVER_TOKEN,user:this.env.PUSHOVER_USER,title,message}),
       signal:AbortSignal.timeout(8_000)
     });
     if (!response.ok || (await response.json()).status !== 1) throw Error('Pushover recusou o aviso');

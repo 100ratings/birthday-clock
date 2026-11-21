@@ -7,9 +7,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=12">
 <title>Birthday Clock</title>
-<script src="app.js?v=11" type="module"></script>
+<script src="app.js?v=12" type="module"></script>
 </head>
 <body><main>
 <header><h1>Birthday Clock</h1><button id="settings" type="button">Ajustes</button></header>
@@ -30,7 +30,6 @@
 </div>
 <label>Minutos de antecedência<input id="lead-minutes" type="number" inputmode="numeric" min="1" max="60" step="1" value="3" required></label>
 <label class="check"><input id="at-time" type="checkbox"> Avisar também no horário da mágica</label>
-<small>Vale para os próximos avisos que você marcar</small>
 <h2>Inject API</h2>
 <label>Seu ID oculto<input id="inject-id" type="text" inputmode="numeric" pattern="[0-9]{1,12}" maxlength="12" placeholder="1234" autocomplete="off"></label>
 <button value="save">Salvar</button><button value="cancel" formnovalidate>Cancelar</button>

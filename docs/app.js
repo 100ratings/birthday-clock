@@ -190,7 +190,11 @@ $('config').addEventListener('close', () => {
   config.atTime = $('at-time').checked;
   config.injectId = $('inject-id').value.trim();
   localStorage.setItem(configKey,JSON.stringify(config));
-  syncAlarm();
+  if (!config.password) return;
+  update(async () => {
+    const result = await api('PATCH',{leadMinutes:config.leadMinutes,atTime:config.atTime});
+    return result.alarm ? 'Horários do aviso atualizados' : 'Ajustes salvos';
+  });
 });
 
 function renderConnection() {
