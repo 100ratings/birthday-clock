@@ -42,10 +42,11 @@ export default {
       if (!env.PUSHOVER_TOKEN || !env.PUSHOVER_USER)
         return reply({error:'Configure as chaves do Pushover no Cloudflare'},503);
 
-      const {at,code,zone,injectId,leadMinutes = 3,atTime = false} = await request.json();
+      const {at,code,zone,injectId,mode = 'DDMM',leadMinutes = 3,atTime = false} = await request.json();
       if (!Number.isInteger(leadMinutes) || leadMinutes < 1 || leadMinutes > 60 || typeof atTime !== 'boolean')
         return reply({error:'Configuração de aviso inválida'},400);
       if (request.method === 'PATCH') return reply({alarm:await alarm.configure(leadMinutes,atTime)},200);
+      if (mode !== 'DDMM' && mode !== 'MMDD') return reply({error:'Modo de data inválido'},400);
       if (injectId !== undefined && (typeof injectId !== 'string' || !/^[0-9]{1,12}$/.test(injectId)))
         return reply({error:'ID do Inject inválido'},400);
       const now = Date.now();
@@ -54,7 +55,9 @@ export default {
 
       const date = new Intl.DateTimeFormat('pt-BR',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
       const label = date.format(at);
-      if (label.replace(':','') !== code) return reply({error:'O horário não corresponde à data'},400);
+      const timeCode = label.replace(':','');
+      const expectedCode = mode === 'MMDD' ? timeCode.slice(2) + timeCode.slice(0,2) : timeCode;
+      if (expectedCode !== code) return reply({error:'O horário não corresponde à data'},400);
 
       const result = await alarm.schedule({at,code,label,name:birthdays[code],notifyAt:at-leadMinutes*minute,atTime});
       if (injectId) result.inject = await sendToInject(injectId,birthdays[code]);
