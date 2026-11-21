@@ -28,9 +28,9 @@ function opportunity(at) {
 }
 
 function opportunities(now) {
-  const start = Math.floor(now / minute) * minute;
+  const start = Math.ceil((now + 2 * minute) / minute) * minute;
   const items = [];
-  for (let offset = 0; offset <= 1442 && items.length < 6; offset++) {
+  for (let offset = 0; offset <= 1440 && items.length < 6; offset++) {
     const item = opportunity(start + offset * minute);
     if (item) items.push(item);
   }
