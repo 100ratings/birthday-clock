@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="style.css?v=19">
 <title>Birthday Clock</title>
-<script src="app.js?v=20" type="module"></script>
+<script src="app.js?v=21" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
@@ -36,4 +36,85 @@
 <label>Seu ID oculto<input id="inject-id" type="text" inputmode="numeric" pattern="[0-9]{1,12}" maxlength="12" placeholder="1234" autocomplete="off"></label>
 <button value="save">Salvar</button><button value="cancel" formnovalidate>Cancelar</button>
 </form></dialog>
-</main></body></html>
+</main>
+<script id="birthday-seed" type="application/json">{"1001":"Rod Stewart","1002":"Marcelo Serrado","1003":"Sharon Stone","1004":"Steven Seagal","1005":"Bono Vox","1006":"Renata Vasconcellos","1007":"Claudia Leitte","1008":"Antonio Banderas","1009":"Paulo Betti","1010":"Miguel Falabella","1011":"Marcelo Tas","1012":"Gabriela Spanic","1101":"Patrícia Pillar","1102":"Jennifer Aniston","1103":"Thiaguinho","1104":"Junior Lima","1105":"Salvador Dalí","1106":"Mano Menezes","1107":"Suzanne Vega","1108":"Tatá Werneck","1109":"Franz Beckenbauer","1110":"Cardi B","1111":"Leonardo DiCaprio","1112":"Rey Mysterio","1201":"Carlos Villagrán","1202":"Abraham Lincoln","1203":"Carlos Alberto de Nóbrega","1204":"Camila Morgado","1205":"Sérgio Chapelin","1206":"Maguila","1207":"Bill Cosby","1208":"Fernando Collor de Mello","1209":"Malu Mader","1210":"Hugh Jackman","1211":"Dani Calabresa","1212":"Silvio Santos","1301":"Orlando Bloom","1302":"Boris Casoy","1303":"Luan Santana","1304":"Bruno Gagliasso","1305":"Otaviano Costa","1306":"Rita Cadillac","1307":"Harrison Ford","1308":"Alfred Hitchcock","1309":"Laura Cardoso","1310":"Paul Simon","1311":"Whoopi Goldberg","1312":"Taylor Swift","1401":"Dave Grohl","1402":"Kleber Bambam","1403":"Albert Einstein","1404":"Paolla Oliveira","1405":"Mark Zuckerberg","1406":"Donald Trump","1407":"Conor McGregor","1408":"Halle Berry","1409":"Fernanda Vasconcellos","1410":"Alexandre Frota","1411":"Rei Charles III","1412":"Vanessa Hudgens","1501":"Martin Luther King Jr.","1502":"Ratinho","1503":"Oswaldo Montenegro","1504":"Emma Watson","1505":"Raí","1506":"Ice Cube","1507":"Samuel Rosa","1508":"Jennifer Lawrence","1509":"Tommy Lee Jones","1510":"Rodrigo Lombardi","1511":"Marcelo Faria","1512":"Adriana Esteves","1601":"Jô Soares","1602":"Oscar Schmidt","1603":"Branco Mello","1604":"Charlie Chaplin","1605":"Megan Fox","1606":"Ticiane Pinheiro","1607":"Ana Paula Arósio","1608":"Madonna","1609":"David Copperfield","1610":"Fernanda Montenegro","1611":"William Bonner","1612":"Jane Austen","1701":"Jim Carrey","1702":"Ísis Valverde","1703":"Kurt Russell","1704":"Márcio Garcia","1705":"Enya","1706":"Arlete Salles","1707":"Ronnie Von","1708":"Robert De Niro","1709":"Fátima Bernardes","1710":"Eminem","1711":"Danny DeVito","1712":"Sarah Paulson","1801":"Kevin Costner","1802":"John Travolta","1803":"Giovanna Antonelli","1804":"Adriane Galisteu","1805":"Edu Guedes","1806":"Paul McCartney","1807":"Vin Diesel","1808":"Patrick Swayze","1809":"Frank Aguiar","1810":"Jean-Claude Van Damme","1811":"Owen Wilson","1812":"Brad Pitt","1901":"Thiago Lacerda","1902":"Evandro Mesquita","1903":"Bruce Willis","1904":"Roberto Carlos","1905":"Daniel Boaventura","1906":"Letícia Spiller","1907":"Ellen Rocche","1908":"Bill Clinton","1909":"Jimmy Fallon","1910":"Patrícia Poeta","1911":"Jodie Foster","1912":"Criss Angel","2001":"Jorge Kajuru","2002":"Rihanna","2003":"Edson Celulari","2004":"Carmen Electra","2005":"Cauã Reymond","2006":"Nicole Kidman","2007":"Gisele Bündchen","2008":"Demi Lovato","2009":"Gracyanne Barbosa","2010":"Snoop Dogg","2011":"Joe Biden","2012":"Jonah Hill","2101":"Paulo Miklos","2102":"Roberto Gómez Bolaños","2103":"Ronaldinho Gaúcho","2104":"Iggy Pop","2105":"Maria Fernanda Cândido","2106":"Lana Del Rey","2107":"Galvão Bueno","2108":"Usain Bolt","2109":"Bill Murray","2110":"Kim Kardashian","2111":"Fábio Jr.","2112":"Samuel L. Jackson","2201":"Caio Castro","2202":"Débora Falabella","2203":"Jorge Ben Jor","2204":"Mano Brown","2205":"Maisa Silva","2206":"Joelma","2207":"Selena Gomez","2208":"Rodrigo Santoro","2209":"Andrea Bocelli","2210":"Jeff Goldblum","2211":"Eliana","2212":"Meghan Trainor","2301":"Nasi","2302":"Alexandre Borges","2303":"Ed Gama","2304":"John Cena","2305":"Rubens Barrichello","2306":"Zinédine Zidane","2307":"Daniel Radcliffe","2308":"Glória Pires","2309":"Bruce Springsteen","2310":"Pelé","2311":"Miley Cyrus","2312":"Cláudia Raia","2401":"Neil Diamond","2402":"Steve Jobs","2403":"Harry Houdini","2404":"José Sarney","2405":"Luiza Brunet","2406":"Lionel Messi","2407":"Jennifer Lopez","2408":"Paulo Coelho","2409":"Scheila Carvalho","2410":"Drake","2411":"Katherine Heigl","2412":"Ricky Martin","2501":"Carolina Ferraz","2502":"Regina Casé","2503":"Elton John","2504":"Felipe Massa","2505":"Cillian Murphy","2506":"Fernanda Lima","2507":"Matt LeBlanc","2508":"Tony Ramos","2509":"Will Smith","2510":"Katy Perry","2511":"Ana Paula Padrão","2512":"Dido","2601":"Bárbara Borges","2602":"Johnny Cash","2603":"Juliana Paes","2604":"Mariana Ximenes","2605":"Tony Tornado","2606":"Ariana Grande","2607":"Sandra Bullock","2608":"Thalía","2609":"Gal Costa","2610":"Milton Nascimento","2611":"Tina Turner","2612":"Kit Harington","2701":"Wolfgang Amadeus Mozart","2702":"Elizabeth Taylor","2703":"Xuxa Meneghel","2704":"Dinho Ouro Preto","2705":"Ivete Sangalo","2706":"Wagner Moura","2707":"Andréia Horta","2708":"Sandra de Sá","2709":"Danilo Gentili","2710":"Lula","2711":"Bruce Lee","2712":"Timothée Chalamet","2801":"Maitê Proença","2802":"Luka Dončić","2803":"Lady Gaga","2804":"Penélope Cruz","2805":"Kylie Minogue","2806":"Elon Musk","2807":"Daniela Mercury","2808":"Paula Fernandes","2809":"Brigitte Bardot","2810":"Julia Roberts","2811":"Carla Diaz","2812":"Denzel Washington","2901":"Romário","2902":"Tony Robbins","2903":"Pedro Bial","2904":"Michelle Pfeiffer","2905":"John F. Kennedy","2906":"Serginho Groisman","2907":"Drica Moraes","2908":"Michael Jackson","2909":"Marcos Frota","2910":"Winona Ryder","2911":"Chadwick Boseman","2912":"Jude Law","3001":"Phil Collins","3003":"Anitta","3004":"Roberto Justus","3005":"Nikolas Ferreira","3006":"Marina Ruy Barbosa","3007":"Arnold Schwarzenegger","3008":"Cameron Diaz","3009":"Evaristo Costa","3010":"Diego Maradona","3011":"Angélica","3012":"LeBron James","3101":"Malvino Salvador","3103":"Ewan McGregor","3105":"Clint Eastwood","3107":"Wesley Snipes","3108":"Richard Gere","3110":"Dunga","3112":"Anthony Hopkins","0101":"Karol Conká","0201":"Cuba Gooding Jr.","0301":"Mel Gibson","0401":"Isaac Newton","0501":"Bradley Cooper","0601":"Cássia Kis","0701":"Nicolas Cage","0801":"Stephen Hawking","0901":"Richard Nixon","0102":"Cátia Fonseca","0202":"Shakira","0302":"Sean Kingston","0402":"Sabrina Sato","0502":"Cristiano Ronaldo","0602":"Bob Marley","0702":"Chris Rock","0802":"James Dean","0902":"Tânia Mara","0103":"Justin Bieber","0203":"Jon Bon Jovi","0303":"Kelly Key","0403":"Gabriel o Pensador","0503":"Fernando Vanucci","0603":"Mara Maravilha","0703":"Rafael Ilha","0803":"Tom Cavalcante","0903":"Lucinha Lins","0104":"Ana Maria Braga","0204":"Supla","0304":"Padre Fábio de Melo","0404":"David Blaine","0504":"Lisandra Souto","0604":"Paul Rudd","0704":"Jackie Chan","0804":"Zeca Camargo","0904":"Kristen Stewart","0105":"Tiririca","0205":"Faustão","0305":"Bruno Mazzeo","0405":"Lulu Santos","0505":"Adele","0605":"Britto Júnior","0705":"Piotr Ilitch Tchaikovsky","0805":"Betty Faria","0905":"Dedé Santana","0106":"Marilyn Monroe","0206":"Caio Blat","0306":"Rafael Nadal","0406":"Angelina Jolie","0506":"Erasmo Carlos","0606":"Björn Borg","0706":"Flávia Alessandra","0806":"Kanye West","0906":"Johnny Depp","0107":"Princesa Diana","0207":"Lindsay Lohan","0307":"Tom Cruise","0407":"Isabeli Fontana","0507":"Monique Evans","0607":"Sylvester Stallone","0707":"Ringo Starr","0807":"Kevin Bacon","0907":"Tom Hanks","0108":"Bruna Lombardi","0208":"João Kleber","0308":"Suzana Alves","0408":"Barack Obama","0508":"Neil Armstrong","0608":"Andy Warhol","0708":"Charlize Theron","0808":"Preta Gil","0908":"Whitney Houston","0109":"Gloria Estefan","0209":"Keanu Reeves","0309":"Charlie Sheen","0409":"Beyoncé","0509":"Marcelo Adnet","0609":"Wesley Safadão","0709":"Toni Garrido","0809":"Leandra Leal","0909":"Adam Sandler","0110":"Julie Andrews","0210":"Mahatma Gandhi","0310":"Gwen Stefani","0410":"Patrícia Abravanel","0510":"Kate Winslet","0610":"Romero Britto","0710":"Vladimir Putin","0810":"Matt Damon","0910":"John Lennon","0111":"Lázaro Ramos","0211":"Mônica Iozzi","0311":"Charles Bronson","0411":"Puff Daddy","0511":"Mr. Catra","0611":"Daniella Cicarelli","0711":"David Guetta","0811":"Luís Fabiano","0911":"Luiz Felipe Scolari","0112":"Woody Allen","0212":"Britney Spears","0312":"Ozzy Osbourne","0412":"Jay-Z","0512":"Walt Disney","0612":"Dulce María","0712":"Carlos Bolsonaro","0812":"Nicki Minaj","0912":"Milton Gonçalves"}</script>
+<script>
+(() => {
+  try {
+    const birthdays = JSON.parse(document.getElementById('birthday-seed').textContent);
+    window.__birthdaySeed = birthdays;
+    const get = id => document.getElementById(id);
+    const minute = 60000;
+    const now = Date.now();
+    const clock = new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const months = 'janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro'.split(' ');
+    const settings = JSON.parse(localStorage.getItem('birthday-clock-config') || '{}');
+    let alarm = null;
+    try {
+      const saved = JSON.parse(localStorage.getItem('birthday-clock-alarm') || 'null');
+      if (settings.password && saved && saved.notifyAt > now) alarm = saved;
+    } catch {}
+    const el = (tag,value='',css='') => {
+      const node = document.createElement(tag);
+      node.textContent = value;
+      if (css) node.className = css;
+      return node;
+    };
+    const btn = (label,primary=false) => el('button',label,primary ? 'primary' : '');
+    const start = Math.ceil((now + 2 * minute) / minute) * minute;
+    const items = [];
+    for (let i=0;i<=1440 && items.length<6;i++) {
+      const at = start + i*minute, d = new Date(at);
+      const day = d.getHours(), month = d.getMinutes();
+      const code = String(day).padStart(2,'0') + String(month).padStart(2,'0');
+      if (birthdays[code]) items.push({at,code,name:birthdays[code],label:clock.format(d),birthday:day+' de '+months[month-1]});
+    }
+    if (!items.length) return;
+    const card = item => {
+      const node = el('article');
+      const delta = item.at-now;
+      const isMarked = alarm && alarm.at === item.at && alarm.code === item.code;
+      if (isMarked) node.classList.add('marked');
+      const row = el('div','','row');
+      row.append(el('time',item.label),el('small','Em '+Math.ceil(delta/minute)+' min'));
+      const paragraph = el('p');
+      paragraph.append(el('strong',item.name));
+      node.append(row,paragraph,el('small',item.birthday));
+      if (!isMarked) {
+        const actions = el('div','','actions');
+        actions.append(btn(delta <= (settings.leadMinutes ?? 3)*minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise',true));
+        node.append(actions);
+      } else node.append(el('p','✓ Aviso marcado','marked-label'));
+      return node;
+    };
+    const featured = card(items[0]);
+    const today = new Date(now);
+    const todayCode = String(today.getDate()).padStart(2,'0')+String(today.getMonth()+1).padStart(2,'0');
+    if (birthdays[todayCode]) {
+      const area=el('div','','today-birthday');
+      const row=el('div','','today-birthday-row');
+      row.append(el('strong',birthdays[todayCode],'today-birthday-name'),btn('Enviar ao Inject'));
+      row.lastElementChild.classList.add('today-inject-button');
+      area.append(el('small','Aniversariante de hoje · '+today.getDate()+' de '+months[today.getMonth()],'today-birthday-label'),row);
+      featured.append(area);
+    }
+    get('current').replaceChildren(featured);
+    get('upcoming').replaceChildren(...items.slice(1).map(card));
+    const box = get('alarm');
+    box.hidden = !alarm;
+    box.replaceChildren();
+    if (alarm) {
+      box.append(el('p','✓ Aviso marcado · '+alarm.label+' · '+alarm.name,'marked-label'));
+      const times = alarm.atTime && alarm.notifyAt < alarm.at ? clock.format(alarm.notifyAt)+' e '+clock.format(alarm.at) : clock.format(alarm.notifyAt);
+      box.append(el('p','Notificação às '+times));
+      const actions=el('div','','actions');
+      actions.append(btn('Cancelar aviso'));
+      if (settings.injectId) actions.append(btn('Reenviar ao Inject'));
+      box.append(actions);
+    }
+    document.querySelector('main').classList.remove('booting');
+  } catch (error) {
+    console.warn('Pré-carregamento indisponível, inicializando normalmente',error);
+  }
+})();
+</script></body></html>
