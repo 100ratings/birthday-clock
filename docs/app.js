@@ -113,6 +113,7 @@ function render() {
     if (config.injectId) actions.append(button('Reenviar ao Inject',() => resendInject(alarm.name)));
     $('alarm').append(actions);
   }
+  document.querySelector('main').classList.remove('booting');
 }
 
 async function api(method = 'GET', payload) {
@@ -279,7 +280,10 @@ try {
   setInterval(() => { if (!document.hidden) render(); },1000);
   setInterval(() => { if (!document.hidden) syncAlarm(); },15000);
 
-} catch { $('notice').textContent = 'Não foi possível carregar a lista de aniversários'; }
+} catch {
+  $('notice').textContent = 'Não foi possível carregar a lista de aniversários';
+  document.querySelector('main').classList.remove('booting');
+}
 
 let registration;
 let checkingUpdate;
