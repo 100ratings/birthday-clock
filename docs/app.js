@@ -6,7 +6,6 @@ const months = 'janeiro fevereiro março abril maio junho julho agosto setembro 
 const configKey = 'birthday-clock-config';
 const config = {endpoint:'https://birthday-clock.omentalistademian.workers.dev', ...JSON.parse(localStorage.getItem(configKey) || '{}')};
 let birthdays, featured, alarm, busy = false;
-let dismissed = new Set();
 
 function opportunity(at) {
   const date = new Date(at);
@@ -50,13 +49,10 @@ function card(item, now) {
   node.append(row,element('p',''));
   node.lastElementChild.append(element('strong',item.name));
   node.append(element('small',item.birthday));
-  if (forward && alarm?.at !== item.at && !dismissed.has(item.at)) {
+  if (forward && alarm?.at !== item.at) {
     const actions = element('div','','actions');
     const label = delta <= windowMs ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
-    actions.append(button(label, () => schedule(item), true),button('Agora não',() => {
-      dismissed.add(item.at);
-      render();
-    }));
+    actions.append(button(label, () => schedule(item), true));
     node.append(actions);
   } else if (alarm?.at === item.at) node.append(element('p','Aviso marcado'));
   return node;
@@ -149,7 +145,6 @@ function cancel() {
 
 function reopen() {
   if (!birthdays) return;
-  dismissed = new Set();
   [featured] = opportunities(Date.now());
   render();
   syncAlarm();
