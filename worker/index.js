@@ -2,7 +2,7 @@ import {DurableObject} from 'cloudflare:workers';
 import list from '../docs/aniversarios.txt';
 
 const birthdays = Object.fromEntries(list.trim().split(/\r?\n/).map(line => line.split('|')));
-const lead = 180_000;
+const minute = 60_000;
 
 export default {
   async fetch(request, env) {
@@ -42,7 +42,9 @@ export default {
       if (!env.PUSHOVER_TOKEN || !env.PUSHOVER_USER)
         return reply({error:'Configure as chaves do Pushover no Cloudflare'},503);
 
-      const {at,code,zone,injectId} = await request.json();
+      const {at,code,zone,injectId,leadMinutes = 3,atTime = false} = await request.json();
+      if (!Number.isInteger(leadMinutes) || leadMinutes < 1 || leadMinutes > 60 || typeof atTime !== 'boolean')
+        return reply({error:'Configuração de aviso inválida'},400);
       if (injectId !== undefined && (typeof injectId !== 'string' || !/^[0-9]{1,12}$/.test(injectId)))
         return reply({error:'ID do Inject inválido'},400);
       const now = Date.now();
@@ -53,7 +55,7 @@ export default {
       const label = date.format(at);
       if (label.replace(':','') !== code) return reply({error:'O horário não corresponde à data'},400);
 
-      const result = await alarm.schedule({at,code,label,name:birthdays[code],notifyAt:at-lead});
+      const result = await alarm.schedule({at,code,label,name:birthdays[code],notifyAt:at-leadMinutes*minute,atTime});
       if (injectId) result.inject = await sendToInject(injectId,birthdays[code]);
       return reply(result,200);
     } catch {
@@ -111,6 +113,12 @@ export class BirthdayAlarm extends DurableObject {
       const store = this.ctx.storage;
       if (item.notifyAt <= Date.now()) {
         await this.send(item);
+        if (item.atTime) {
+          const next = {...item,notifyAt:item.at};
+          await store.put('alarm',next);
+          await store.setAlarm(next.notifyAt);
+          return {alarm:next,sent:true};
+        }
         await store.delete('alarm');
         await store.deleteAlarm();
         return {alarm:null,sent:true};
@@ -122,17 +130,26 @@ export class BirthdayAlarm extends DurableObject {
   }
 
   async alarm() {
-    const store = this.ctx.storage;
-    const item = await this.status();
-    if (!item) return;
-    if (item.notifyAt > Date.now()) {
-      await store.setAlarm(item.notifyAt);
-      return;
-    }
+    await this.ctx.blockConcurrencyWhile(async () => {
+      const store = this.ctx.storage;
+      const item = await this.status();
+      if (!item) return;
+      const now = Date.now();
+      if (now < item.notifyAt) {
+        await store.setAlarm(item.notifyAt);
+        return;
+      }
 
-    // Alarm retries can arrive late. Drop stale performance reminders.
-    if (Date.now() < item.at) await this.send(item);
-    if ((await this.status())?.at === item.at) await store.delete('alarm');
+      const isAdvance = item.notifyAt < item.at;
+      if (now < (isAdvance ? item.at : item.at + 3 * minute)) await this.send(item);
+      if (isAdvance && item.atTime) {
+        const next = {...item,notifyAt:item.at};
+        await store.put('alarm',next);
+        await store.setAlarm(Math.max(next.notifyAt,Date.now()));
+      } else {
+        await store.delete('alarm');
+      }
+    });
   }
 
   async send(item) {

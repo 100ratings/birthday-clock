@@ -62,7 +62,7 @@ function card(item, now) {
   node.append(element('small',item.birthday));
   if (forward && alarm?.at !== item.at) {
     const actions = element('div','','actions');
-    const label = delta <= windowMs ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
+    const label = delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
     actions.append(button(label, () => schedule(item), true));
     node.append(actions);
   } else if (alarm?.at === item.at) node.append(element('p','Aviso marcado'));
@@ -80,6 +80,10 @@ function render() {
   $('alarm').replaceChildren();
   if (alarm) {
     $('alarm').append(element('p','Aviso marcado · ' + alarm.label + ' · ' + alarm.name));
+    const times = alarm.atTime && alarm.notifyAt < alarm.at
+      ? clock.format(alarm.notifyAt) + ' e ' + clock.format(alarm.at)
+      : clock.format(alarm.notifyAt);
+    $('alarm').append(element('p','Notificação às ' + times));
     const actions = element('div','','actions');
     actions.append(button('Cancelar aviso',cancel));
     if (config.injectId) actions.append(button('Reenviar ao Inject',() => resendInject(alarm.name)));
@@ -119,7 +123,7 @@ async function update(action) {
 function schedule(item) {
   if (!config.endpoint || !config.password) { $('settings').click(); return; }
   update(async () => {
-    const result = await api('PUT',{at:item.at,code:item.code,zone:Intl.DateTimeFormat().resolvedOptions().timeZone});
+    const result = await api('PUT',{at:item.at,code:item.code,zone:Intl.DateTimeFormat().resolvedOptions().timeZone,leadMinutes:config.leadMinutes ?? 3,atTime:config.atTime ?? false});
     const message = result.sent ? 'Aviso enviado ao Pushover' : 'Aviso marcado para ' + clock.format(result.alarm.notifyAt);
     if (!config.injectId) return message;
     try {
@@ -174,12 +178,16 @@ $('next').onclick = () => {
 $('settings').onclick = () => {
   $('pair-code').value = '';
   renderConnection();
+  $('lead-minutes').value = config.leadMinutes ?? 3;
+  $('at-time').checked = config.atTime ?? false;
   $('inject-id').value = config.injectId || '';
   $('config').showModal();
   checkForUpdate();
 };
 $('config').addEventListener('close', () => {
   if ($('config').returnValue !== 'save') return;
+  config.leadMinutes = Number($('lead-minutes').value);
+  config.atTime = $('at-time').checked;
   config.injectId = $('inject-id').value.trim();
   localStorage.setItem(configKey,JSON.stringify(config));
   syncAlarm();

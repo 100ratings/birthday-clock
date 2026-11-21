@@ -17,3 +17,6 @@ small,#notice{color:#d1c7da}
 dialog{width:min(92vw,29rem);border:1px solid #665d77;border-radius:1rem;background:#1d1a27;padding:1.25rem}
 dialog::backdrop{background:#000a}
 label,input{display:block;width:100%;margin:.6rem 0}
+
+label.check{display:flex;align-items:center;gap:.55rem}
+label.check input{width:1.2rem;height:1.2rem;margin:0;flex:none}
