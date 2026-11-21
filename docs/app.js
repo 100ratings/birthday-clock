@@ -81,6 +81,14 @@ async function api(method = 'GET', payload) {
     body:payload ? JSON.stringify(payload) : undefined
   });
   const result = await response.json();
+  if (response.status === 401) {
+    delete config.password;
+    localStorage.setItem(configKey,JSON.stringify(config));
+    alarm = null;
+    renderConnection();
+    render();
+    throw Error('Reconecte este aparelho em Ajustes');
+  }
   if (!response.ok) throw Error(result.error || 'Não foi possível acessar os avisos');
   alarm = result.alarm;
   return result;
@@ -118,7 +126,7 @@ function reopen() {
 }
 
 async function syncAlarm() {
-  if (!config.endpoint || busy) return;
+  if (!config.endpoint || !config.password || busy) return;
   try { await api(); render(); }
   catch (error) { $('notice').textContent = error.message; }
 }
@@ -166,6 +174,7 @@ $('pair-button').onclick = async () => {
     localStorage.setItem(configKey,JSON.stringify(config));
     $('pair-code').value = '';
     renderConnection();
+    $('notice').textContent = '';
     syncAlarm();
   } catch (error) {
     $('connection-status').textContent = error.message;
