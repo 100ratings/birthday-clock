@@ -32,7 +32,9 @@ export default {
       if (!env.PUSHOVER_TOKEN || !env.PUSHOVER_USER)
         return reply({error:'Configure as chaves do Pushover no Cloudflare'},503);
 
-      const {at,code,zone} = await request.json();
+      const {at,code,zone,injectId} = await request.json();
+      if (injectId !== undefined && (typeof injectId !== 'string' || !/^[0-9]{1,12}$/.test(injectId)))
+        return reply({error:'ID do Inject inválido'},400);
       const now = Date.now();
       if (!Number.isSafeInteger(at) || at % 60_000 || at <= now || at > now + 25 * 60 * 60_000 || !/^\d{4}$/.test(code) || !birthdays[code])
         return reply({error:'Horário inválido ou já iniciado'},400);
@@ -41,12 +43,29 @@ export default {
       const label = date.format(at);
       if (label.replace(':','') !== code) return reply({error:'O horário não corresponde à data'},400);
 
-      return reply(await alarm.schedule({at,code,label,name:birthdays[code],notifyAt:at-lead}),200);
+      const result = await alarm.schedule({at,code,label,name:birthdays[code],notifyAt:at-lead});
+      if (injectId) result.inject = await sendToInject(injectId,birthdays[code]);
+      return reply(result,200);
     } catch {
       return reply({error:'Não foi possível concluir a operação. Confira o aviso marcado antes de tentar de novo'},502);
     }
   }
 };
+
+async function sendToInject(id, name) {
+  try {
+    const response = await fetch('https://11z.co/_w/' + id + '/selection', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({value:name}),
+      redirect:'error',
+      signal:AbortSignal.timeout(6_000)
+    });
+    return response.ok ? 'sent' : 'failed';
+  } catch {
+    return 'failed';
+  }
+}
 
 export class BirthdayAlarm extends DurableObject {
   async status() {

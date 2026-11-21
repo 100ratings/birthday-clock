@@ -99,8 +99,9 @@ function schedule(item) {
   if (!config.endpoint || !config.password) { $('settings').click(); return; }
   if (alarm && !confirm('Trocar o aviso marcado para ' + alarm.label + '?')) return;
   update(async () => {
-    const result = await api('PUT',{at:item.at,code:item.code,zone:Intl.DateTimeFormat().resolvedOptions().timeZone});
-    return result.sent ? 'Aviso enviado ao Pushover' : 'Aviso marcado para ' + clock.format(result.alarm.notifyAt);
+    const result = await api('PUT',{at:item.at,code:item.code,zone:Intl.DateTimeFormat().resolvedOptions().timeZone,injectId:config.injectId || undefined});
+    const message = result.sent ? 'Aviso enviado ao Pushover' : 'Aviso marcado para ' + clock.format(result.alarm.notifyAt);
+    return message + (result.inject === 'failed' ? ' · Falha no envio ao Inject' : result.inject === 'sent' ? ' · Nome enviado ao Inject' : '');
   });
 }
 
@@ -129,6 +130,7 @@ $('next').onclick = () => {
 $('settings').onclick = () => {
   $('endpoint').value = config.endpoint || '';
   $('password').value = config.password || '';
+  $('inject-id').value = config.injectId || '';
   $('config').showModal();
   checkForUpdate();
 };
@@ -139,6 +141,7 @@ $('config').addEventListener('close', () => {
     if (value.protocol !== 'https:') throw Error();
     config.endpoint = value.origin;
     config.password = $('password').value.trim();
+    config.injectId = $('inject-id').value.trim();
     localStorage.setItem(configKey,JSON.stringify(config));
     alarm = null;
     render();
