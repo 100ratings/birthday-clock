@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101319">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="style.css">
+<title>Birthday Clock</title>
+<script src="app.js" type="module"></script>
+</head>
+<body><main>
+<header><h1>Birthday Clock</h1><button id="settings" type="button">Ajustes</button></header>
+<p id="notice" role="status"></p>
+<section id="alarm" hidden></section>
+<section id="current" aria-label="Oportunidade em destaque"></section>
+<button id="next" type="button" hidden>Próxima</button>
+<h2>Outras oportunidades</h2>
+<section id="upcoming" aria-label="Outras oportunidades"></section>
+<dialog id="config"><form method="dialog">
+<h2>Avisos pelo Pushover</h2>
+<label>Endereço do Worker<input id="endpoint" type="url" placeholder="https://birthday-clock.example.workers.dev"></label>
+<label>Senha do app<input id="password" type="password" autocomplete="off"></label>
+<button value="save">Salvar</button><button value="cancel" formnovalidate>Cancelar</button>
+</form></dialog>
+</main></body></html>
