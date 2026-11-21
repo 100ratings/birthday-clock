@@ -4,7 +4,7 @@ const windowMs = 3 * minute;
 const clock = new Intl.DateTimeFormat('pt-BR', {hour:'2-digit', minute:'2-digit'});
 const months = 'janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro'.split(' ');
 const configKey = 'birthday-clock-config';
-const config = JSON.parse(localStorage.getItem(configKey) || '{}');
+const config = {endpoint:'https://birthday-clock.omentalistademian.workers.dev', ...JSON.parse(localStorage.getItem(configKey) || '{}')};
 let birthdays, featured, alarm, busy = false;
 let dismissed = new Set();
 
