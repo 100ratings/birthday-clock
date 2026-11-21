@@ -71,7 +71,13 @@ function render() {
   $('next').hidden = now < featured.at + windowMs;
   $('alarm').hidden = !alarm;
   $('alarm').replaceChildren();
-  if (alarm) $('alarm').append(element('p','Aviso marcado · ' + alarm.label + ' · ' + alarm.name),button('Cancelar aviso',cancel));
+  if (alarm) {
+    $('alarm').append(element('p','Aviso marcado · ' + alarm.label + ' · ' + alarm.name));
+    const actions = element('div','','actions');
+    actions.append(button('Cancelar aviso',cancel));
+    if (config.injectId) actions.append(button('Reenviar ao Inject',() => resendInject(alarm.name)));
+    $('alarm').append(actions);
+  }
 }
 
 async function api(method = 'GET', payload) {
@@ -107,9 +113,34 @@ function schedule(item) {
   if (!config.endpoint || !config.password) { $('settings').click(); return; }
   if (alarm && !confirm('Trocar o aviso marcado para ' + alarm.label + '?')) return;
   update(async () => {
-    const result = await api('PUT',{at:item.at,code:item.code,zone:Intl.DateTimeFormat().resolvedOptions().timeZone,injectId:config.injectId || undefined});
+    const result = await api('PUT',{at:item.at,code:item.code,zone:Intl.DateTimeFormat().resolvedOptions().timeZone});
     const message = result.sent ? 'Aviso enviado ao Pushover' : 'Aviso marcado para ' + clock.format(result.alarm.notifyAt);
-    return message + (result.inject === 'failed' ? ' · Falha no envio ao Inject' : result.inject === 'sent' ? ' · Nome enviado ao Inject' : '');
+    if (!config.injectId) return message;
+    try {
+      await sendToInject(item.name);
+      return message + ' · Nome enviado ao Inject';
+    } catch {
+      return message + ' · Falha no envio ao Inject';
+    }
+  });
+}
+
+async function sendToInject(name) {
+  const id = config.injectId;
+  if (!/^[0-9]{1,12}$/.test(id)) throw Error('Confira o ID do Inject em Ajustes');
+  const response = await fetch('https://11z.co/_w/' + id + '/selection', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({value:name}),
+    signal:AbortSignal.timeout(15_000)
+  });
+  if (!response.ok) throw Error('Falha no envio ao Inject (' + response.status + ')');
+}
+
+function resendInject(name) {
+  update(async () => {
+    await sendToInject(name);
+    return 'Nome enviado ao Inject';
   });
 }
 
