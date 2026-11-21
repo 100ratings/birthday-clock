@@ -1,4 +1,8 @@
 const $ = id => document.getElementById(id);
+// Impede gestos de zoom no iOS sem interferir em toques e rolagem
+for (const type of ['gesturestart','gesturechange']) {
+  document.addEventListener(type,event => event.preventDefault(),{passive:false});
+}
 const minute = 60_000;
 const clock = new Intl.DateTimeFormat('pt-BR', {hour:'2-digit', minute:'2-digit'});
 const months = 'janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro'.split(' ');
