@@ -11,7 +11,7 @@ export default {
 
     const headers = {
       'Access-Control-Allow-Origin':env.APP_ORIGIN,
-      'Access-Control-Allow-Methods':'GET, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods':'GET, PUT, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers':'Authorization, Content-Type',
       'Cache-Control':'no-store',
       'Vary':'Origin'
@@ -24,6 +24,10 @@ export default {
     try {
       if (request.method === 'GET') return reply({alarm:await alarm.status()},200);
       if (request.method === 'DELETE') return reply({alarm:await alarm.cancel()},200);
+      if (request.method === 'POST') {
+        await alarm.send({label:'Teste imediato',name:'Enviado pelo Birthday Clock'});
+        return reply({sent:true},200);
+      }
       if (request.method !== 'PUT') return reply({error:'Método inválido'},405);
       if (!env.PUSHOVER_TOKEN || !env.PUSHOVER_USER)
         return reply({error:'Configure as chaves do Pushover no Cloudflare'},503);
