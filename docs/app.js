@@ -56,6 +56,7 @@ function card(item, now) {
   const delta = item.at - now;
   const forward = delta > 0;
   const isMarked = alarm?.at === item.at && alarm?.code === item.code;
+  if (isMarked) node.classList.add('marked');
   const state = forward ? 'Em ' + Math.ceil(delta / minute) + ' min' : 'Agora';
   const row = element('div','','row');
   row.append(element('time',item.label),element('small',state));
@@ -67,7 +68,7 @@ function card(item, now) {
     const label = delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
     actions.append(button(label, () => schedule(item), true));
     node.append(actions);
-  } else if (isMarked) node.append(element('p','Aviso marcado'));
+  } else if (isMarked) node.append(element('p','✓ Aviso marcado','marked-label'));
   return node;
 }
 
@@ -81,7 +82,7 @@ function render() {
   $('alarm').hidden = !alarm;
   $('alarm').replaceChildren();
   if (alarm) {
-    $('alarm').append(element('p','Aviso marcado · ' + alarm.label + ' · ' + alarm.name));
+    $('alarm').append(element('p','✓ Aviso marcado · ' + alarm.label + ' · ' + alarm.name,'marked-label'));
     const times = alarm.atTime && alarm.notifyAt < alarm.at
       ? clock.format(alarm.notifyAt) + ' e ' + clock.format(alarm.at)
       : clock.format(alarm.notifyAt);
