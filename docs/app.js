@@ -1,12 +1,11 @@
 const $ = id => document.getElementById(id);
 const minute = 60_000;
-const windowMs = 3 * minute;
 const clock = new Intl.DateTimeFormat('pt-BR', {hour:'2-digit', minute:'2-digit'});
 const months = 'janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro'.split(' ');
 const configKey = 'birthday-clock-config';
 const config = {endpoint:'https://birthday-clock.omentalistademian.workers.dev', ...JSON.parse(localStorage.getItem(configKey) || '{}')};
 const alarmCacheKey = 'birthday-clock-alarm';
-let birthdays, featured, alarm, busy = false;
+let birthdays, alarm, busy = false;
 try {
   const cached = JSON.parse(localStorage.getItem(alarmCacheKey) || 'null');
   if (config.password && cached?.notifyAt > Date.now()) alarm = cached;
@@ -27,13 +26,12 @@ function opportunity(at) {
 
 function opportunities(now) {
   const start = Math.floor(now / minute) * minute;
-  const active = [], future = [];
-  for (let offset = -2; offset <= 1442 && future.length < 7; offset++) {
+  const items = [];
+  for (let offset = 0; offset <= 1442 && items.length < 6; offset++) {
     const item = opportunity(start + offset * minute);
-    if (!item) continue;
-    (item.at <= now ? active : future).push(item);
+    if (item) items.push(item);
   }
-  return [...active.reverse(), ...future];
+  return items;
 }
 
 function element(tag, content, className) {
@@ -54,7 +52,7 @@ function card(item, now) {
   const node = element('article','');
   const delta = item.at - now;
   const forward = delta > 0;
-  const state = forward ? 'Em ' + Math.ceil(delta / minute) + ' min' : now < item.at + windowMs ? 'Agora' : 'Encerrada';
+  const state = forward ? 'Em ' + Math.ceil(delta / minute) + ' min' : 'Agora';
   const row = element('div','','row');
   row.append(element('time',item.label),element('small',state));
   node.append(row,element('p',''));
@@ -70,12 +68,12 @@ function card(item, now) {
 }
 
 function render() {
-  if (!birthdays || !featured) return;
+  if (!birthdays) return;
   const now = Date.now();
-  const others = opportunities(now).filter(item => item.at !== featured.at).slice(0,5);
+  const [featured, ...others] = opportunities(now);
+  if (!featured) return;
   $('current').replaceChildren(card(featured,now));
   $('upcoming').replaceChildren(...others.map(item => card(item,now)));
-  $('next').hidden = now < featured.at + windowMs;
   $('alarm').hidden = !alarm;
   $('alarm').replaceChildren();
   if (alarm) {
@@ -160,7 +158,6 @@ function cancel() {
 
 function reopen() {
   if (!birthdays) return;
-  [featured] = opportunities(Date.now());
   render();
   syncAlarm();
 }
@@ -171,10 +168,6 @@ async function syncAlarm() {
   catch (error) { $('notice').textContent = error.message; }
 }
 
-$('next').onclick = () => {
-  [featured] = opportunities(Date.now());
-  render();
-};
 $('settings').onclick = () => {
   $('pair-code').value = '';
   renderConnection();
@@ -236,7 +229,6 @@ try {
   const response = await fetch('./aniversarios.txt');
   if (!response.ok) throw Error();
   birthdays = Object.fromEntries((await response.text()).trim().split(/\r?\n/).map(line => line.split('|')));
-  [featured] = opportunities(Date.now());
   if (alarm) render();
   await syncAlarm();
   render();

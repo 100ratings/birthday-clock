@@ -1,5 +1,5 @@
-const cacheName = 'birthday-clock-v12';
-const files = ['./index.html','./style.css?v=12','./app.js?v=12','./aniversarios.txt','./manifest.webmanifest','./icon.png','./icon-large.png'];
+const cacheName = 'birthday-clock-v13';
+const files = ['./index.html','./style.css?v=13','./app.js?v=13','./aniversarios.txt','./manifest.webmanifest','./icon.png','./icon-large.png'];
 const scope = self.registration.scope;
 const allowed = new Set(files.map(file => new URL(file,scope).href));
 
