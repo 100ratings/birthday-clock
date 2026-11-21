@@ -271,12 +271,14 @@ $('pair-button').onclick = async () => {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) reopen(); });
 window.addEventListener('pageshow', event => { if (event.persisted) reopen(); });
 try {
-  const response = await fetch('./aniversarios.txt');
-  if (!response.ok) throw Error();
-  birthdays = Object.fromEntries((await response.text()).trim().split(/\r?\n/).map(line => line.split('|')));
-  if (alarm) render();
-  await syncAlarm();
+  birthdays = window.__birthdaySeed;
+  if (!birthdays) {
+    const response = await fetch('./aniversarios.txt');
+    if (!response.ok) throw Error();
+    birthdays = Object.fromEntries((await response.text()).trim().split(/\r?\n/).map(line => line.split('|')));
+  }
   render();
+  syncAlarm();
   setInterval(() => { if (!document.hidden) render(); },1000);
   setInterval(() => { if (!document.hidden) syncAlarm(); },15000);
 
