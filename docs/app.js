@@ -130,6 +130,7 @@ $('settings').onclick = () => {
   $('endpoint').value = config.endpoint || '';
   $('password').value = config.password || '';
   $('config').showModal();
+  checkForUpdate();
 };
 $('config').addEventListener('close', () => {
   if ($('config').returnValue !== 'save') return;
@@ -153,5 +154,53 @@ try {
   reopen();
   setInterval(() => { if (!document.hidden) render(); },1000);
   setInterval(() => { if (!document.hidden) syncAlarm(); },15000);
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.warn);
+
 } catch { $('notice').textContent = 'Não foi possível carregar a lista de aniversários'; }
+
+let registration;
+let checkingUpdate;
+const updateStatus = $('update-status');
+
+function checkForUpdate() {
+  if (!registration || !navigator.onLine) return Promise.resolve();
+  if (checkingUpdate) return checkingUpdate;
+  checkingUpdate = registration.update().catch(() => {}).finally(() => {
+    checkingUpdate = null;
+  });
+  return checkingUpdate;
+}
+
+$('update-app').onclick = async () => {
+  if (!navigator.onLine) {
+    updateStatus.textContent = 'Conecte-se à internet para atualizar';
+    return;
+  }
+  $('update-app').disabled = true;
+  await checkForUpdate();
+  const url = new URL(location.href);
+  url.searchParams.set('_update', Date.now().toString());
+  location.replace(url);
+};
+
+const openedUrl = new URL(location.href);
+if (openedUrl.searchParams.has('_update')) {
+  openedUrl.searchParams.delete('_update');
+  history.replaceState(history.state, '', openedUrl);
+}
+
+if ('serviceWorker' in navigator) {
+  const alreadyControlled = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!alreadyControlled) return;
+    $('update-app').textContent = 'Instalar atualização';
+    updateStatus.textContent = 'Nova versão disponível';
+  });
+  navigator.serviceWorker.register('./sw.js', {updateViaCache:'none'}).then(value => {
+    registration = value;
+    checkForUpdate();
+  }).catch(console.warn);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkForUpdate();
+  });
+  setInterval(() => { if (!document.hidden) checkForUpdate(); },30_000);
+}

@@ -7,9 +7,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=2">
 <title>Birthday Clock</title>
-<script src="app.js" type="module"></script>
+<script src="app.js?v=2" type="module"></script>
 </head>
 <body><main>
 <header><h1>Birthday Clock</h1><button id="settings" type="button">Ajustes</button></header>
@@ -20,6 +20,8 @@
 <h2>Outras oportunidades</h2>
 <section id="upcoming" aria-label="Outras oportunidades"></section>
 <dialog id="config"><form method="dialog">
+<button id="update-app" type="button">Atualizar app</button>
+<p id="update-status" role="status"></p>
 <h2>Avisos pelo Pushover</h2>
 <label>Endereço do Worker<input id="endpoint" type="url" placeholder="https://birthday-clock.example.workers.dev"></label>
 <label>Senha do app<input id="password" type="password" autocomplete="off"></label>
