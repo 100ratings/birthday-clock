@@ -157,13 +157,12 @@ export class BirthdayAlarm extends DurableObject {
         await store.setAlarm(Math.max(next.notifyAt,Date.now()));
         return;
       }
-      if (item.atTime && now < item.at + 3 * minute) await this.send(item,'Birthday Clock · Agora');
+      if (item.atTime && now < item.at + 3 * minute) await this.send(item,'Calendário','Seu evento começa agora');
       await store.delete('alarm');
     });
   }
 
-  async send(item, title = 'Birthday Clock') {
-    const message = item.label + ' · ' + item.name;
+  async send(item, title = 'Birthday Clock', message = item.label + ' · ' + item.name) {
     const response = await fetch('https://api.pushover.net/1/messages.json',{
       method:'POST',
       body:new URLSearchParams({token:this.env.PUSHOVER_TOKEN,user:this.env.PUSHOVER_USER,title,message}),
