@@ -1,5 +1,5 @@
-const cacheName = 'birthday-clock-v21';
-const files = ['./index.html','./style.css?v=19','./app.js?v=20','./aniversarios.txt','./manifest.webmanifest?v=14','./apple-touch-icon.png','./favicon-32x32.png','./favicon-16x16.png','./favicon.ico','./android-chrome-192x192.png','./android-chrome-512x512.png'];
+const cacheName = 'birthday-clock-v22';
+const files = ['./index.html','./style.css?v=19','./app.js?v=21','./aniversarios.txt','./manifest.webmanifest?v=14','./apple-touch-icon.png','./favicon-32x32.png','./favicon-16x16.png','./favicon.ico','./android-chrome-192x192.png','./android-chrome-512x512.png'];
 const scope = self.registration.scope;
 const allowed = new Set(files.map(file => new URL(file,scope).href));
 
@@ -25,12 +25,15 @@ self.addEventListener('fetch', event => {
   if (!navigation && !allowed.has(url.href)) return;
   const cacheKey = navigation ? new URL('index.html',scope).href : url.href;
   event.respondWith((async () => {
+    const cache = await caches.open(cacheName);
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
     try {
       const response = await fetch(request,{cache:'no-cache'});
-      if (response.ok) return response;
-      return (await (await caches.open(cacheName)).match(cacheKey)) || response;
+      if (response.ok) await cache.put(cacheKey,response.clone());
+      return response;
     } catch {
-      return (await (await caches.open(cacheName)).match(cacheKey)) || Response.error();
+      return Response.error();
     }
   })());
 });
