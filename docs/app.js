@@ -111,7 +111,6 @@ async function update(action) {
 
 function schedule(item) {
   if (!config.endpoint || !config.password) { $('settings').click(); return; }
-  if (alarm && !confirm('Trocar o aviso marcado para ' + alarm.label + '?')) return;
   update(async () => {
     const result = await api('PUT',{at:item.at,code:item.code,zone:Intl.DateTimeFormat().resolvedOptions().timeZone});
     const message = result.sent ? 'Aviso enviado ao Pushover' : 'Aviso marcado para ' + clock.format(result.alarm.notifyAt);
