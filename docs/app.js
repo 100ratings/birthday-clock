@@ -11,6 +11,7 @@ const configKey = 'birthday-clock-config';
 const config = {endpoint:'https://birthday-clock.omentalistademian.workers.dev', ...JSON.parse(localStorage.getItem(configKey) || '{}')};
 const alarmCacheKey = 'birthday-clock-alarm';
 const lastInjectKey = 'birthday-clock-last-inject';
+const confirmedInjectKey = 'birthday-clock-confirmed-inject';
 function readLastInjectName() {
   try {
     const saved = JSON.parse(localStorage.getItem(lastInjectKey) || 'null');
@@ -18,6 +19,35 @@ function readLastInjectName() {
   } catch { return null; }
 }
 let lastInjectName = readLastInjectName();
+function readConfirmedInject() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(confirmedInjectKey) || 'null');
+    return saved?.id === config.injectId && Number.isSafeInteger(saved.at) &&
+      /^\d{4}$/.test(saved.code) && typeof saved.name === 'string' ? saved : null;
+  } catch { return null; }
+}
+let confirmedInject = readConfirmedInject();
+let injectingAt = null;
+let alarmRevision = 0;
+function clearConfirmedInject() {
+  confirmedInject = null;
+  localStorage.removeItem(confirmedInjectKey);
+}
+function isInjectConfirmed(item) {
+  return Boolean(config.injectId && confirmedInject && item &&
+    confirmedInject.id === config.injectId && confirmedInject.at === item.at &&
+    confirmedInject.code === item.code && confirmedInject.name === item.name &&
+    lastInjectName === item.name);
+}
+function recordConfirmedInject(item) {
+  if (!item || !alarm || alarm.at !== item.at ||
+      alarm.code !== item.code || alarm.name !== item.name) {
+    clearConfirmedInject();
+    return;
+  }
+  confirmedInject = {id:config.injectId,at:item.at,code:item.code,name:item.name};
+  localStorage.setItem(confirmedInjectKey,JSON.stringify(confirmedInject));
+}
 let birthdays, alarm, busy = false;
 let dateMode = 'DDMM';
 const opportunityCache = new Map();
@@ -33,6 +63,7 @@ try {
 function saveAlarm(value) {
   const nextSnapshot = value ? JSON.stringify(value) : null;
   alarm = value;
+  if (!value && confirmedInject) clearConfirmedInject();
   if (nextSnapshot === alarmSnapshot) return;
   alarmSnapshot = nextSnapshot;
   if (nextSnapshot) localStorage.setItem(alarmCacheKey,nextSnapshot);
@@ -107,44 +138,54 @@ function updateOpportunitySlot(node,item,now) {
       badge:identity.querySelector('.inject-indicator'),
       ariaLabel:action.getAttribute('aria-label'),
       item:null,
-      isMarked:null
+      isMarked:null,
+      isConfirmed:null,
+      injectId:null
     };
     opportunityViews.set(node,view);
   }
 
   const delta = item.at - now;
   const isMarked = Boolean(alarm?.at === item.at && alarm?.code === item.code);
+  const isConfirmed = isMarked && isInjectConfirmed(item);
   if (view.time.textContent !== item.label) view.time.textContent = item.label;
   const timeLeft = 'Em ' + Math.ceil(delta / minute) + ' min';
   if (view.remaining.textContent !== timeLeft) view.remaining.textContent = timeLeft;
   if (view.name.textContent !== item.name) view.name.textContent = item.name;
   if (view.birthday.textContent !== item.birthday) view.birthday.textContent = item.birthday;
 
-  if (item.name === lastInjectName && !view.badge) {
-    view.badge = element('span','✓ Inject','inject-indicator');
-    view.identity.append(view.badge);
-  } else if (item.name !== lastInjectName && view.badge) {
+  // Nas oportunidades, apenas o botão dourado comunica a confirmação
+  if (view.badge) {
     view.badge.remove();
     view.badge = null;
   }
 
-  const label = isMarked ? '✓'
+  const label = isMarked
+    ? isConfirmed ? '✓' : injectingAt === item.at ? 'Enviando...' : config.injectId ? 'Enviar Inject' : 'Ajustar Inject'
     : delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora'
     : alarm ? 'Trocar aviso' : 'Me avise';
   if (view.action.textContent !== label) view.action.textContent = label;
-  if (view.isMarked !== isMarked) view.action.classList.toggle('selected-action',isMarked);
-  const ariaLabel = isMarked ? 'Aviso marcado para ' + item.label + ', ' + item.name : label + ' para ' + item.label + ', ' + item.name;
+  if (view.isConfirmed !== isConfirmed) view.action.classList.toggle('selected-action',isConfirmed);
+  const ariaLabel = isConfirmed
+    ? 'Aviso agendado e envio ao Inject confirmado para ' + item.label + ', ' + item.name
+    : isMarked ? label + ' para ' + item.label + ', ' + item.name + ', aviso já marcado'
+    : label + ' para ' + item.label + ', ' + item.name;
   if (view.ariaLabel !== ariaLabel) {
     view.action.setAttribute('aria-label',ariaLabel);
     view.ariaLabel = ariaLabel;
   }
-  if (view.item !== item || view.isMarked !== isMarked) {
-    view.action.onclick = isMarked ? null : () => schedule(item);
+  if (view.item !== item || view.isMarked !== isMarked ||
+      view.isConfirmed !== isConfirmed || view.injectId !== config.injectId) {
+    view.action.onclick = isMarked
+      ? isConfirmed ? null : config.injectId ? () => resendInject(item.name,item) : () => $('settings').click()
+      : () => schedule(item);
   }
-  const disabled = Boolean(isMarked || busy);
+  const disabled = Boolean(isConfirmed || busy);
   if (view.action.disabled !== disabled) view.action.disabled = disabled;
   view.item = item;
   view.isMarked = isMarked;
+  view.isConfirmed = isConfirmed;
+  view.injectId = config.injectId;
 }
 
 function renderToday(now) {
@@ -216,7 +257,7 @@ function renderAlarm() {
       cancelButton.title = 'Cancelar aviso';
       controls.append(cancelButton);
       if (config.injectId) {
-        const resendButton = button('Reenviar',() => resendInject(alarm.name));
+        const resendButton = button('Reenviar',() => resendInject(alarm.name,alarm));
         resendButton.title = 'Reenviar ao Inject';
         controls.append(resendButton);
       }
@@ -248,6 +289,7 @@ function render() {
 
 async function api(method = 'GET', payload) {
   if (!config.endpoint || !config.password) throw Error('Conecte o Cloudflare em Ajustes para usar os avisos');
+  const requestRevision = alarmRevision;
   const response = await fetch(config.endpoint + '/alarm', {
     method, signal:AbortSignal.timeout(12_000), headers:{Authorization:'Bearer ' + config.password,'Content-Type':'application/json'},
     body:payload ? JSON.stringify(payload) : undefined
@@ -262,6 +304,8 @@ async function api(method = 'GET', payload) {
     throw Error('Reconecte este aparelho em Ajustes');
   }
   if (!response.ok) throw Error(result.error || 'Não foi possível acessar os avisos');
+  // Ignora consultas iniciadas antes da troca ou do cancelamento de um aviso
+  if (method === 'GET' && (busy || requestRevision !== alarmRevision)) return result;
   saveAlarm(result.alarm);
   return result;
 }
@@ -273,6 +317,7 @@ function showNotice(message) {
 async function update(action,pendingMessage = 'Processando...') {
   if (busy) return;
   busy = true;
+  alarmRevision++;
   showNotice(pendingMessage);
   render();
   try { showNotice(await action()); }
@@ -284,21 +329,26 @@ function schedule(item) {
   if (!config.endpoint || !config.password) { $('settings').click(); return; }
   update(async () => {
     const result = await api('PUT',{at:item.at,code:item.code,mode:item.mode,zone:Intl.DateTimeFormat().resolvedOptions().timeZone,leadMinutes:config.leadMinutes ?? 3,atTime:config.atTime ?? false});
-    // O check aparece assim que o servidor confirma, sem esperar pelo Inject
+    // Um novo aviso exige nova confirmação do Inject, mesmo para a mesma celebridade
+    clearConfirmedInject();
     render();
     const message = result.sent ? 'Aviso enviado ao Pushover' : 'Aviso marcado para ' + clock.format(result.alarm.notifyAt);
-    if (!config.injectId) return message;
+    if (!config.injectId) return message + ' · Configure o Inject para confirmar';
+    injectingAt = item.at;
+    render();
     showNotice(message + ' · Enviando ao Inject...');
     try {
-      await sendToInject(item.name);
+      await sendToInject(item.name,item);
       return message + ' · Enviado ao Inject: ' + item.name;
     } catch {
-      return message + ' · Falha no envio ao Inject';
+      return message + ' · Falha no Inject, use Enviar Inject para tentar novamente';
+    } finally {
+      injectingAt = null;
     }
   },'Marcando aviso...');
 }
 
-async function sendToInject(name) {
+async function sendToInject(name,item = null) {
   const id = config.injectId;
   if (!/^[0-9]{1,12}$/.test(id)) throw Error('Confira o ID do Inject em Ajustes');
   const response = await fetch('https://11z.co/_w/' + id + '/selection', {
@@ -310,13 +360,22 @@ async function sendToInject(name) {
   if (!response.ok) throw Error('Falha no envio ao Inject (' + response.status + ')');
   lastInjectName = name;
   localStorage.setItem(lastInjectKey,JSON.stringify({id,name}));
+  recordConfirmedInject(item);
   render();
 }
 
-function resendInject(name) {
+function resendInject(name,item = null) {
   update(async () => {
-    await sendToInject(name);
-    return 'Enviado ao Inject: ' + name;
+    if (item) {
+      injectingAt = item.at;
+      render();
+    }
+    try {
+      await sendToInject(name,item);
+      return 'Enviado ao Inject: ' + name;
+    } finally {
+      injectingAt = null;
+    }
   },'Enviando ao Inject...');
 }
 
@@ -387,6 +446,7 @@ $('config').addEventListener('close', () => {
   config.atTime = $('at-time').checked;
   config.injectId = $('inject-id').value.trim();
   lastInjectName = readLastInjectName();
+  confirmedInject = readConfirmedInject();
   localStorage.setItem(configKey,JSON.stringify(config));
   if (!config.password) return;
   update(async () => {
@@ -418,6 +478,7 @@ $('pair-button').onclick = async () => {
     config.password = result.password;
     config.injectId = $('inject-id').value.trim();
     lastInjectName = readLastInjectName();
+    confirmedInject = readConfirmedInject();
     localStorage.setItem(configKey,JSON.stringify(config));
     $('pair-code').value = '';
     renderConnection();

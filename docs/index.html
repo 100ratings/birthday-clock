@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="style.css?v=37">
 <title>Birthday Clock</title>
-<script src="app.js?v=38" type="module"></script>
+<script src="app.js?v=39" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
@@ -54,6 +54,11 @@
       const saved = JSON.parse(localStorage.getItem('birthday-clock-last-inject') || 'null');
       if (saved && saved.id === settings.injectId && typeof saved.name === 'string') lastInjectName = saved.name;
     } catch {}
+    let confirmedInject = null;
+    try {
+      const saved = JSON.parse(localStorage.getItem('birthday-clock-confirmed-inject') || 'null');
+      if (saved?.id === settings.injectId) confirmedInject = saved;
+    } catch {}
     let alarm = null;
     try {
       const saved = JSON.parse(localStorage.getItem('birthday-clock-alarm') || 'null');
@@ -83,14 +88,22 @@
       const person = el('div','','opportunity-person');
       const identity = el('div','','name-with-inject');
       identity.append(el('strong',item.name));
-      if (item.name === lastInjectName) identity.append(el('span','✓ Inject','inject-indicator'));
       person.append(identity,el('small',item.birthday,'opportunity-date'));
       const control = el('div','','opportunity-control');
-      const isMarked = alarm && alarm.at === item.at && alarm.code === item.code;
-      const action = btn(isMarked ? '✓' : (item.at-now) <= (settings.leadMinutes ?? 3)*minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise',true);
-      if (isMarked) action.classList.add('selected-action');
-      action.disabled = Boolean(isMarked);
-      action.setAttribute('aria-label',isMarked ? 'Aviso marcado para ' + item.label + ', ' + item.name : action.textContent + ' para ' + item.label + ', ' + item.name);
+      const isMarked = Boolean(alarm && alarm.at === item.at && alarm.code === item.code);
+      const isConfirmed = Boolean(isMarked && settings.injectId && confirmedInject &&
+        confirmedInject.id === settings.injectId && confirmedInject.at === item.at &&
+        confirmedInject.code === item.code && confirmedInject.name === item.name && lastInjectName === item.name);
+      const label = isMarked
+        ? isConfirmed ? '✓' : settings.injectId ? 'Enviar Inject' : 'Ajustar Inject'
+        : (item.at-now) <= (settings.leadMinutes ?? 3)*minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
+      const action = btn(label,true);
+      if (isConfirmed) action.classList.add('selected-action');
+      action.disabled = Boolean(isConfirmed);
+      action.setAttribute('aria-label',isConfirmed
+        ? 'Aviso agendado e envio ao Inject confirmado para ' + item.label + ', ' + item.name
+        : isMarked ? label + ' para ' + item.label + ', ' + item.name + ', aviso já marcado'
+        : label + ' para ' + item.label + ', ' + item.name);
       control.append(action);
       node.append(timing,person,control);
       return node;
