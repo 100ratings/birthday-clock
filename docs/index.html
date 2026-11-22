@@ -10,15 +10,14 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="icon" href="favicon.ico" sizes="any">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css?v=21">
+<link rel="stylesheet" href="style.css?v=22">
 <title>Birthday Clock</title>
-<script src="app.js?v=23" type="module"></script>
+<script src="app.js?v=24" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
 <p id="notice" role="status"></p>
 <section id="alarm" hidden></section>
-<section id="inject-status" hidden aria-label="Último envio ao Inject"></section>
 <section id="current" aria-label="Oportunidade em destaque"></section>
 <h2>Outras oportunidades</h2>
 <section id="upcoming" aria-label="Outras oportunidades"></section>
@@ -68,17 +67,12 @@
     };
     const btn = (label,primary=false) => el('button',label,primary ? 'primary' : '');
     const start = Math.ceil((now + 2 * minute) / minute) * minute;
-    const excludedNames = new Set([alarm?.name,lastInjectName].filter(Boolean));
     const items = [];
-    let matchingInject = null;
-    for (let i=0;i<=1440 && (items.length<6 || (lastInjectName && !matchingInject));i++) {
+    for (let i=0;i<=1440 && items.length<6;i++) {
       const at = start + i*minute, d = new Date(at);
       const day = d.getHours(), month = d.getMinutes();
       const code = String(day).padStart(2,'0') + String(month).padStart(2,'0');
-      if (!birthdays[code]) continue;
-      const item = {at,code,name:birthdays[code],label:clock.format(d),birthday:day+' de '+months[month-1]};
-      if (item.name === lastInjectName && !matchingInject) matchingInject = item;
-      if (!excludedNames.has(item.name) && items.length < 6) items.push(item);
+      if (birthdays[code]) items.push({at,code,name:birthdays[code],label:clock.format(d),birthday:day+' de '+months[month-1]});
     }
     if (!items.length) return;
     const card = item => {
@@ -122,7 +116,6 @@
     if (alarm) {
       const alarmHeading=el('p','','alarm-heading');
       alarmHeading.append(el('span','✓ Aviso marcado · '+alarm.label+' · '+alarm.name,'marked-label alarm-label-text'));
-      if (alarm.name === lastInjectName) alarmHeading.append(el('span','✓ No Inject','inject-indicator'));
       box.append(alarmHeading);
       const times = alarm.atTime && alarm.notifyAt < alarm.at ? clock.format(alarm.notifyAt)+' e '+clock.format(alarm.at) : clock.format(alarm.notifyAt);
       box.append(el('p','Notificação às '+times));
@@ -130,24 +123,6 @@
       actions.append(btn('Cancelar aviso'));
       if (settings.injectId) actions.append(btn('Reenviar ao Inject'));
       box.append(actions);
-    }
-    const injectBox=get('inject-status');
-    const showInjectCard=Boolean(lastInjectName && lastInjectName !== alarm?.name);
-    injectBox.hidden=!showInjectCard;
-    injectBox.replaceChildren();
-    if (showInjectCard) {
-      const heading=el('p','','inject-status-heading');
-      heading.append(el('span','✓ No Inject','inject-indicator'));
-      if (matchingInject) heading.append(el('span','· '+matchingInject.label,'inject-status-time'));
-      injectBox.append(heading,el('strong',lastInjectName,'inject-status-name'),el('small','Último nome enviado ao Inject'));
-      const actions=el('div','','actions');
-      if (matchingInject) {
-        const delta=matchingInject.at-now;
-        const label=delta<=(settings.leadMinutes ?? 3)*minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
-        actions.append(btn(label,true));
-      }
-      actions.append(btn('Reenviar ao Inject'));
-      injectBox.append(actions);
     }
     document.querySelector('main').classList.remove('booting');
   } catch (error) {
