@@ -32,7 +32,7 @@ button:disabled{opacity:.55}
 #alarm .marked-label{font-size:.75rem}
 .alarm-heading{display:flex;align-items:baseline;gap:.4rem;white-space:nowrap}
 .alarm-time{font-size:1.25rem;font-weight:750;line-height:1.35rem;font-variant-numeric:tabular-nums;color:#e7cd91}
-.alarm-name{font-size:.88rem;line-height:1.08rem;max-height:2.16rem;overflow:hidden;overflow-wrap:anywhere}
+.alarm-name{font-size:1.25rem;line-height:1.35rem;max-height:2.7rem;overflow:hidden;overflow-wrap:anywhere}
 .alarm-date{font-size:.77rem;line-height:1rem;color:#dfd5e6}
 .alarm-empty-title{font-size:.91rem;color:#d1c7da}
 .alarm-times{font-size:.69rem;color:#b9afc4}
