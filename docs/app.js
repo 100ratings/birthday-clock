@@ -114,6 +114,7 @@ function renderToday(now) {
   const name = birthdays[code];
   const section = $('today');
   section.hidden = !name;
+  section.classList.toggle('selected-today',Boolean(name && name === lastInjectName));
   if (!name) return;
 
   let label = section.querySelector('.today-birthday-label');
