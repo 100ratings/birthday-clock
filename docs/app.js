@@ -19,14 +19,22 @@ function readLastInjectName() {
 let lastInjectName = readLastInjectName();
 let birthdays, alarm, busy = false;
 let dateMode = 'DDMM';
+const opportunityCache = new Map();
+if (window.__birthdayPreload?.mode === 'DDMM') {
+  opportunityCache.set('DDMM',window.__birthdayPreload);
+}
+let alarmSnapshot = localStorage.getItem(alarmCacheKey);
 try {
-  const cached = JSON.parse(localStorage.getItem(alarmCacheKey) || 'null');
+  const cached = JSON.parse(alarmSnapshot || 'null');
   if (config.password && cached?.notifyAt > Date.now()) alarm = cached;
 } catch {}
 
 function saveAlarm(value) {
+  const nextSnapshot = value ? JSON.stringify(value) : null;
   alarm = value;
-  if (value) localStorage.setItem(alarmCacheKey,JSON.stringify(value));
+  if (nextSnapshot === alarmSnapshot) return;
+  alarmSnapshot = nextSnapshot;
+  if (nextSnapshot) localStorage.setItem(alarmCacheKey,nextSnapshot);
   else localStorage.removeItem(alarmCacheKey);
 }
 
@@ -41,11 +49,14 @@ function opportunity(at) {
 
 function opportunities(now) {
   const start = Math.ceil((now + 2 * minute) / minute) * minute;
+  const cached = opportunityCache.get(dateMode);
+  if (cached?.start === start) return cached.items;
   const items = [];
   for (let offset = 0; offset <= 1440 && items.length < 6; offset++) {
     const item = opportunity(start + offset * minute);
     if (item) items.push(item);
   }
+  opportunityCache.set(dateMode,{start,items});
   return items;
 }
 
@@ -222,9 +233,10 @@ function showNotice(message) {
   $('notice').textContent = message || 'Pronto para continuar';
 }
 
-async function update(action) {
+async function update(action,pendingMessage = 'Processando...') {
   if (busy) return;
   busy = true;
+  showNotice(pendingMessage);
   render();
   try { showNotice(await action()); }
   catch (error) { showNotice(error.message); }
@@ -235,15 +247,18 @@ function schedule(item) {
   if (!config.endpoint || !config.password) { $('settings').click(); return; }
   update(async () => {
     const result = await api('PUT',{at:item.at,code:item.code,mode:item.mode,zone:Intl.DateTimeFormat().resolvedOptions().timeZone,leadMinutes:config.leadMinutes ?? 3,atTime:config.atTime ?? false});
+    // O check aparece assim que o servidor confirma, sem esperar pelo Inject
+    render();
     const message = result.sent ? 'Aviso enviado ao Pushover' : 'Aviso marcado para ' + clock.format(result.alarm.notifyAt);
     if (!config.injectId) return message;
+    showNotice(message + ' · Enviando ao Inject...');
     try {
       await sendToInject(item.name);
       return message + ' · Enviado ao Inject: ' + item.name;
     } catch {
       return message + ' · Falha no envio ao Inject';
     }
-  });
+  },'Marcando aviso...');
 }
 
 async function sendToInject(name) {
@@ -258,13 +273,14 @@ async function sendToInject(name) {
   if (!response.ok) throw Error('Falha no envio ao Inject (' + response.status + ')');
   lastInjectName = name;
   localStorage.setItem(lastInjectKey,JSON.stringify({id,name}));
+  render();
 }
 
 function resendInject(name) {
   update(async () => {
     await sendToInject(name);
     return 'Enviado ao Inject: ' + name;
-  });
+  },'Enviando ao Inject...');
 }
 
 function sendTodayToInject(name) {
@@ -272,17 +288,18 @@ function sendTodayToInject(name) {
     // Não desmarcar o Pushover se o envio ao Inject não for confirmado
     await sendToInject(name);
     if (!alarm) return 'Enviado ao Inject: ' + name;
+    showNotice('Enviado ao Inject: ' + name + ' · Cancelando aviso...');
     try {
       await api('DELETE');
       return 'Enviado ao Inject: ' + name + ' · Aviso cancelado';
     } catch (error) {
       return 'Enviado ao Inject: ' + name + ' · Atenção, não foi possível confirmar o cancelamento do aviso: ' + error.message;
     }
-  });
+  },'Enviando ao Inject...');
 }
 
 function cancel() {
-  update(async () => { await api('DELETE'); return 'Aviso cancelado'; });
+  update(async () => { await api('DELETE'); return 'Aviso cancelado'; },'Cancelando aviso...');
 }
 
 function reopen() {
@@ -297,8 +314,11 @@ function reopen() {
 
 async function syncAlarm() {
   if (!config.endpoint || !config.password || busy) return;
-  try { await api(); render(); }
-  catch (error) { showNotice(error.message); }
+  const before = alarmSnapshot;
+  try {
+    await api();
+    if (alarmSnapshot !== before) render();
+  } catch (error) { showNotice(error.message); }
 }
 
 function renderDateMode() {
@@ -383,7 +403,15 @@ try {
   }
   render();
   syncAlarm();
-  setInterval(() => { if (!document.hidden) render(); },1000);
+  // A lista mostra minutos, portanto não há motivo para recalculá-la a cada segundo
+  function scheduleMinuteRefresh() {
+    const delay = minute - (Date.now() % minute) + 75;
+    setTimeout(() => {
+      if (!document.hidden) render();
+      scheduleMinuteRefresh();
+    },delay);
+  }
+  scheduleMinuteRefresh();
   setInterval(() => { if (!document.hidden) syncAlarm(); },15000);
 
 } catch {
