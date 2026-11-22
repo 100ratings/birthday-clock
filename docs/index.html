@@ -10,17 +10,17 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="icon" href="favicon.ico" sizes="any">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=23">
 <title>Birthday Clock</title>
-<script src="app.js?v=24" type="module"></script>
+<script src="app.js?v=25" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
 <p id="notice" role="status"></p>
 <section id="alarm" hidden></section>
-<section id="current" aria-label="Oportunidade em destaque"></section>
-<h2>Outras oportunidades</h2>
-<section id="upcoming" aria-label="Outras oportunidades"></section>
+<section id="today" hidden aria-label="Aniversariante de hoje"></section>
+<h2>Próximas oportunidades</h2>
+<section id="upcoming" aria-label="Próximas oportunidades"></section>
 <dialog id="config"><form method="dialog">
 <button id="update-app" type="button">Atualizar app</button>
 <p id="update-status" role="status"></p>
@@ -94,9 +94,12 @@
       } else node.append(el('p','✓ Aviso marcado','marked-label'));
       return node;
     };
-    const featured = card(items[0]);
+    get('upcoming').replaceChildren(...items.map(card));
     const today = new Date(now);
     const todayCode = String(today.getDate()).padStart(2,'0')+String(today.getMonth()+1).padStart(2,'0');
+    const todaySection = get('today');
+    todaySection.replaceChildren();
+    todaySection.hidden = !birthdays[todayCode];
     if (birthdays[todayCode]) {
       const area=el('div','','today-birthday');
       const row=el('div','','today-birthday-row');
@@ -106,10 +109,8 @@
       row.append(identity,btn('Enviar ao Inject'));
       row.lastElementChild.classList.add('today-inject-button');
       area.append(el('small','Aniversariante de hoje · '+today.getDate()+' de '+months[today.getMonth()],'today-birthday-label'),row);
-      featured.append(area);
+      todaySection.append(area);
     }
-    get('current').replaceChildren(featured);
-    get('upcoming').replaceChildren(...items.slice(1).map(card));
     const box = get('alarm');
     box.hidden = !alarm;
     box.replaceChildren();
