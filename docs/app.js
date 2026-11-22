@@ -562,5 +562,5 @@ if ('serviceWorker' in navigator) {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) checkForUpdate();
   });
-  setInterval(() => { if (!document.hidden) checkForUpdate(); },30_000);
+  setInterval(() => { if (!document.hidden) checkForUpdate(); },5 * 60_000);
 }
