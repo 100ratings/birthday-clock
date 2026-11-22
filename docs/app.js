@@ -64,73 +64,53 @@ function button(label, action, primary = false) {
   return node;
 }
 
-function card(item, now) {
-  const node = element('article','');
-  const delta = item.at - now;
-  const forward = delta > 0;
-  const isMarked = alarm?.at === item.at && alarm?.code === item.code;
-  if (isMarked) node.classList.add('marked');
-  const state = forward ? 'Em ' + Math.ceil(delta / minute) + ' min' : 'Agora';
-  const row = element('div','','row');
-  row.append(element('time',item.label),element('small',state));
-  const nameLine = element('p','','name-with-inject');
-  nameLine.append(element('strong',item.name));
-  if (item.name === lastInjectName) nameLine.append(element('span','✓ No Inject','inject-indicator'));
-  node.append(row,nameLine,element('small',item.birthday));
-  if (forward && !isMarked) {
-    const actions = element('div','','actions');
-    const label = delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
-    actions.append(button(label, () => schedule(item), true));
-    node.append(actions);
-  } else if (isMarked) node.append(element('p','✓ Aviso marcado','marked-label'));
+function card() {
+  const node = element('article','','opportunity');
+  const timing = element('div','','opportunity-time');
+  timing.append(element('time',''),element('small','','countdown'));
+  const person = element('div','','opportunity-person');
+  const identity = element('div','','name-with-inject');
+  identity.append(element('strong',''));
+  person.append(identity,element('small','','opportunity-date'));
+  const control = element('div','','opportunity-control');
+  const action = button('',() => {},true);
+  const marked = element('span','✓','opportunity-marked');
+  marked.hidden = true;
+  control.append(action,marked);
+  node.append(timing,person,control);
   return node;
 }
 
-function updateOpportunitySlot(node, item, now) {
+function updateOpportunitySlot(node,item,now) {
   const delta = item.at - now;
   const isMarked = alarm?.at === item.at && alarm?.code === item.code;
   node.classList.toggle('marked',Boolean(isMarked));
-
-  const row = node.querySelector('.row');
-  const time = row.querySelector('time');
-  const countdown = row.querySelector('small');
-  const remaining = 'Em ' + Math.ceil(delta / minute) + ' min';
-  if (time.textContent !== item.label) time.textContent = item.label;
-  if (countdown.textContent !== remaining) countdown.textContent = remaining;
-
+  const time = node.querySelector('time');
+  const remaining = node.querySelector('.countdown');
   const identity = node.querySelector('.name-with-inject');
   const name = identity.querySelector('strong');
+  const birthday = node.querySelector('.opportunity-date');
+  const action = node.querySelector('.opportunity-control button');
+  const marked = node.querySelector('.opportunity-marked');
+
+  if (time.textContent !== item.label) time.textContent = item.label;
+  const timeLeft = 'Em ' + Math.ceil(delta / minute) + ' min';
+  if (remaining.textContent !== timeLeft) remaining.textContent = timeLeft;
   if (name.textContent !== item.name) name.textContent = item.name;
+  if (birthday.textContent !== item.birthday) birthday.textContent = item.birthday;
+
   const badge = identity.querySelector('.inject-indicator');
   if (item.name === lastInjectName && !badge) identity.append(element('span','✓ No Inject','inject-indicator'));
   if (item.name !== lastInjectName && badge) badge.remove();
 
-  const birthday = node.children[2];
-  if (birthday.textContent !== item.birthday) birthday.textContent = item.birthday;
-
-  let actions = node.querySelector('.actions');
-  if (!actions) {
-    actions = element('div','','actions');
-    node.append(actions);
-  }
-  let actionButton = actions.querySelector('button');
-  if (!actionButton) {
-    actionButton = button('',() => {},true);
-    actions.append(actionButton);
-  }
-  let marked = node.querySelector('.marked-label');
-  if (!marked) {
-    marked = element('p','✓ Aviso marcado','marked-label');
-    node.append(marked);
-  }
-  actions.hidden = Boolean(isMarked);
+  action.hidden = Boolean(isMarked);
   marked.hidden = !isMarked;
   if (!isMarked) {
     const label = delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
-    if (actionButton.textContent !== label) actionButton.textContent = label;
-    actionButton.onclick = () => schedule(item);
-    actionButton.disabled = busy;
+    if (action.textContent !== label) action.textContent = label;
+    action.onclick = () => schedule(item);
   }
+  action.disabled = busy;
 }
 
 function renderToday(now) {
@@ -173,26 +153,37 @@ function renderAlarm() {
   const key = alarm
     ? [alarm.at,alarm.code,alarm.label,alarm.name,alarm.notifyAt,alarm.atTime,Boolean(config.injectId)].join('|')
     : 'none';
-  if (key === alarmRenderKey) {
-    for (const node of box.querySelectorAll('button')) node.disabled = busy;
-    return;
+  if (key !== alarmRenderKey) {
+    alarmRenderKey = key;
+    box.replaceChildren();
+    box.classList.toggle('has-alarm',Boolean(alarm));
+    const info = element('div','','alarm-info');
+    if (alarm) {
+      info.append(
+        element('small','✓ Aviso marcado · ' + alarm.label,'marked-label'),
+        element('strong',alarm.name,'alarm-name')
+      );
+      const times = alarm.atTime && alarm.notifyAt < alarm.at
+        ? clock.format(alarm.notifyAt) + ' e ' + clock.format(alarm.at)
+        : clock.format(alarm.notifyAt);
+      info.append(element('small','Notificações às ' + times,'alarm-times'));
+      const controls = element('div','','alarm-controls');
+      const cancelButton = button('Cancelar',cancel);
+      cancelButton.title = 'Cancelar aviso';
+      controls.append(cancelButton);
+      if (config.injectId) {
+        const resendButton = button('Reenviar',() => resendInject(alarm.name));
+        resendButton.title = 'Reenviar ao Inject';
+        controls.append(resendButton);
+      }
+      box.append(info,controls);
+    } else {
+      info.append(element('strong','Nenhum aviso marcado','alarm-empty-title'));
+      info.append(element('small','Escolha uma oportunidade abaixo','alarm-times'));
+      box.append(info);
+    }
   }
-  alarmRenderKey = key;
-  box.hidden = !alarm;
-  box.replaceChildren();
-  if (!alarm) return;
-
-  const heading = element('p','','alarm-heading');
-  heading.append(element('span','✓ Aviso marcado · ' + alarm.label + ' · ' + alarm.name,'marked-label alarm-label-text'));
-  box.append(heading);
-  const times = alarm.atTime && alarm.notifyAt < alarm.at
-    ? clock.format(alarm.notifyAt) + ' e ' + clock.format(alarm.at)
-    : clock.format(alarm.notifyAt);
-  box.append(element('p','Notificação às ' + times));
-  const actions = element('div','','actions');
-  actions.append(button('Cancelar aviso',cancel));
-  if (config.injectId) actions.append(button('Reenviar ao Inject',() => resendInject(alarm.name)));
-  box.append(actions);
+  for (const node of box.querySelectorAll('button')) node.disabled = busy;
 }
 
 function render() {
@@ -203,7 +194,7 @@ function render() {
 
   // Os seis cartões permanecem nos mesmos elementos, sem recriar a lista a cada segundo
   while (list.children.length > items.length) list.lastElementChild.remove();
-  while (list.children.length < items.length) list.append(card(items[list.children.length],now));
+  while (list.children.length < items.length) list.append(card());
   items.forEach((item,index) => updateOpportunitySlot(list.children[index],item,now));
 
   renderToday(now);
@@ -231,20 +222,20 @@ async function api(method = 'GET', payload) {
   return result;
 }
 
+function showNotice(message) {
+  clearTimeout(noticeTimer);
+  $('notice').textContent = message;
+  if (message) noticeTimer = setTimeout(() => {
+    if ($('notice').textContent === message) $('notice').textContent = '';
+  },3000);
+}
+
 async function update(action) {
   if (busy) return;
   busy = true;
-  clearTimeout(noticeTimer);
   render();
-  try {
-    const message = await action();
-    $('notice').textContent = message;
-    if (typeof message === 'string' && message.includes('Enviado ao Inject: ')) {
-      noticeTimer = setTimeout(() => {
-        if ($('notice').textContent === message) $('notice').textContent = '';
-      },5000);
-    }
-  } catch (error) { $('notice').textContent = error.message; }
+  try { showNotice(await action()); }
+  catch (error) { showNotice(error.message); }
   finally { busy = false; render(); }
 }
 
@@ -301,7 +292,7 @@ function reopen() {
 async function syncAlarm() {
   if (!config.endpoint || !config.password || busy) return;
   try { await api(); render(); }
-  catch (error) { $('notice').textContent = error.message; }
+  catch (error) { showNotice(error.message); }
 }
 
 function renderDateMode() {

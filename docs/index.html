@@ -10,17 +10,17 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="icon" href="favicon.ico" sizes="any">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css?v=24">
+<link rel="stylesheet" href="style.css?v=25">
 <title>Birthday Clock</title>
-<script src="app.js?v=26" type="module"></script>
+<script src="app.js?v=27" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
-<p id="notice" role="status"></p>
-<section id="alarm" hidden></section>
-<section id="today" hidden aria-label="Aniversariante de hoje"></section>
+<section id="today" aria-label="Aniversariante de hoje"></section>
+<section id="alarm" aria-label="Estado do aviso"></section>
 <h2>Próximas oportunidades</h2>
 <section id="upcoming" aria-label="Próximas oportunidades"></section>
+<p id="notice" role="status" aria-live="polite"></p>
 <dialog id="config"><form method="dialog">
 <button id="update-app" type="button">Atualizar app</button>
 <p id="update-status" role="status"></p>
@@ -76,22 +76,23 @@
     }
     if (!items.length) return;
     const card = item => {
-      const node = el('article');
-      const delta = item.at-now;
+      const node = el('article','','opportunity');
+      const timing = el('div','','opportunity-time');
+      timing.append(el('time',item.label),el('small','Em '+Math.ceil((item.at-now)/minute)+' min','countdown'));
+      const person = el('div','','opportunity-person');
+      const identity = el('div','','name-with-inject');
+      identity.append(el('strong',item.name));
+      if (item.name === lastInjectName) identity.append(el('span','✓ No Inject','inject-indicator'));
+      person.append(identity,el('small',item.birthday,'opportunity-date'));
+      const control = el('div','','opportunity-control');
       const isMarked = alarm && alarm.at === item.at && alarm.code === item.code;
       if (isMarked) node.classList.add('marked');
-      const row = el('div','','row');
-      row.append(el('time',item.label),el('small','Em '+Math.ceil(delta/minute)+' min'));
-      const paragraph = el('p');
-      paragraph.className = 'name-with-inject';
-      paragraph.append(el('strong',item.name));
-      if (item.name === lastInjectName) paragraph.append(el('span','✓ No Inject','inject-indicator'));
-      node.append(row,paragraph,el('small',item.birthday));
-      if (!isMarked) {
-        const actions = el('div','','actions');
-        actions.append(btn(delta <= (settings.leadMinutes ?? 3)*minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise',true));
-        node.append(actions);
-      } else node.append(el('p','✓ Aviso marcado','marked-label'));
+      const action = btn((item.at-now) <= (settings.leadMinutes ?? 3)*minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise',true);
+      action.hidden = Boolean(isMarked);
+      const marked = el('span','✓','opportunity-marked');
+      marked.hidden = !isMarked;
+      control.append(action,marked);
+      node.append(timing,person,control);
       return node;
     };
     get('upcoming').replaceChildren(...items.map(card));
@@ -99,7 +100,6 @@
     const todayCode = String(today.getDate()).padStart(2,'0')+String(today.getMonth()+1).padStart(2,'0');
     const todaySection = get('today');
     todaySection.replaceChildren();
-    todaySection.hidden = !birthdays[todayCode];
     if (birthdays[todayCode]) {
       const area=el('div','','today-birthday');
       const row=el('div','','today-birthday-row');
@@ -112,18 +112,19 @@
       todaySection.append(area);
     }
     const box = get('alarm');
-    box.hidden = !alarm;
-    box.replaceChildren();
+    const info = el('div','','alarm-info');
     if (alarm) {
-      const alarmHeading=el('p','','alarm-heading');
-      alarmHeading.append(el('span','✓ Aviso marcado · '+alarm.label+' · '+alarm.name,'marked-label alarm-label-text'));
-      box.append(alarmHeading);
+      box.classList.add('has-alarm');
+      info.append(el('small','✓ Aviso marcado · '+alarm.label,'marked-label'),el('strong',alarm.name,'alarm-name'));
       const times = alarm.atTime && alarm.notifyAt < alarm.at ? clock.format(alarm.notifyAt)+' e '+clock.format(alarm.at) : clock.format(alarm.notifyAt);
-      box.append(el('p','Notificação às '+times));
-      const actions=el('div','','actions');
-      actions.append(btn('Cancelar aviso'));
-      if (settings.injectId) actions.append(btn('Reenviar ao Inject'));
-      box.append(actions);
+      info.append(el('small','Notificações às '+times,'alarm-times'));
+      const controls=el('div','','alarm-controls');
+      controls.append(btn('Cancelar'));
+      if (settings.injectId) controls.append(btn('Reenviar'));
+      box.replaceChildren(info,controls);
+    } else {
+      info.append(el('strong','Nenhum aviso marcado','alarm-empty-title'),el('small','Escolha uma oportunidade abaixo','alarm-times'));
+      box.replaceChildren(info);
     }
     document.querySelector('main').classList.remove('booting');
   } catch (error) {
