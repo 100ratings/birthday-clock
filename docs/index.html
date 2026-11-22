@@ -10,9 +10,9 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="icon" href="favicon.ico" sizes="any">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css?v=33">
+<link rel="stylesheet" href="style.css?v=34">
 <title>Birthday Clock</title>
-<script src="app.js?v=35" type="module"></script>
+<script src="app.js?v=36" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
@@ -122,8 +122,10 @@
       const day = Number(alarm.code?.slice(0,2));
       const month = Number(alarm.code?.slice(2,4));
       if (day >= 1 && day <= 31 && month >= 1 && month <= 12) info.append(el('small',day+' de '+months[month-1],'alarm-date'));
-      const times = alarm.atTime && alarm.notifyAt < alarm.at ? clock.format(alarm.notifyAt)+' e '+clock.format(alarm.at) : clock.format(alarm.notifyAt);
-      info.append(el('small','Notificações às '+times,'alarm-times'));
+      const notify = el('small','Notificações às ','alarm-times');
+      notify.append(el('time',clock.format(alarm.notifyAt),'alarm-notify-early'));
+      if (alarm.atTime && alarm.notifyAt < alarm.at) notify.append(el('span',' e '),el('time',clock.format(alarm.at),'alarm-notify-later'));
+      info.append(notify);
       const controls=el('div','','alarm-controls');
       controls.append(btn('Cancelar'));
       if (settings.injectId) controls.append(btn('Reenviar'));

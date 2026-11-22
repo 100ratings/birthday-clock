@@ -178,10 +178,12 @@ function renderAlarm() {
       if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
         info.append(element('small',day + ' de ' + months[month - 1],'alarm-date'));
       }
-      const times = alarm.atTime && alarm.notifyAt < alarm.at
-        ? clock.format(alarm.notifyAt) + ' e ' + clock.format(alarm.at)
-        : clock.format(alarm.notifyAt);
-      info.append(element('small','Notificações às ' + times,'alarm-times'));
+      const notify = element('small','Notificações às ','alarm-times');
+      notify.append(element('time',clock.format(alarm.notifyAt),'alarm-notify-early'));
+      if (alarm.atTime && alarm.notifyAt < alarm.at) {
+        notify.append(element('span',' e '),element('time',clock.format(alarm.at),'alarm-notify-later'));
+      }
+      info.append(notify);
       const controls = element('div','','alarm-controls');
       const cancelButton = button('Cancelar',cancel);
       cancelButton.title = 'Cancelar aviso';

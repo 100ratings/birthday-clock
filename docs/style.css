@@ -36,6 +36,7 @@ button:disabled{opacity:.55}
 .alarm-date{font-size:.77rem;line-height:1rem;color:#dfd5e6}
 .alarm-empty-title{font-size:.91rem;color:#d1c7da}
 .alarm-times{font-size:.69rem;color:#b9afc4}
+.alarm-notify-early{color:#e9a0a0;font-weight:700;font-variant-numeric:tabular-nums}
 .alarm-controls{display:flex;gap:.3rem;flex:none}
 .alarm-controls button{font-size:.68rem;padding:.4rem .42rem;min-height:42px;white-space:nowrap}
 #upcoming{display:flex;flex-direction:column;gap:.42rem}
