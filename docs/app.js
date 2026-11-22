@@ -86,45 +86,128 @@ function card(item, now) {
   return node;
 }
 
+function updateOpportunitySlot(node, item, now) {
+  const delta = item.at - now;
+  const isMarked = alarm?.at === item.at && alarm?.code === item.code;
+  node.classList.toggle('marked',Boolean(isMarked));
+
+  const row = node.querySelector('.row');
+  const time = row.querySelector('time');
+  const countdown = row.querySelector('small');
+  const remaining = 'Em ' + Math.ceil(delta / minute) + ' min';
+  if (time.textContent !== item.label) time.textContent = item.label;
+  if (countdown.textContent !== remaining) countdown.textContent = remaining;
+
+  const identity = node.querySelector('.name-with-inject');
+  const name = identity.querySelector('strong');
+  if (name.textContent !== item.name) name.textContent = item.name;
+  const badge = identity.querySelector('.inject-indicator');
+  if (item.name === lastInjectName && !badge) identity.append(element('span','✓ No Inject','inject-indicator'));
+  if (item.name !== lastInjectName && badge) badge.remove();
+
+  const birthday = node.children[2];
+  if (birthday.textContent !== item.birthday) birthday.textContent = item.birthday;
+
+  let actions = node.querySelector('.actions');
+  if (!actions) {
+    actions = element('div','','actions');
+    node.append(actions);
+  }
+  let actionButton = actions.querySelector('button');
+  if (!actionButton) {
+    actionButton = button('',() => {},true);
+    actions.append(actionButton);
+  }
+  let marked = node.querySelector('.marked-label');
+  if (!marked) {
+    marked = element('p','✓ Aviso marcado','marked-label');
+    node.append(marked);
+  }
+  actions.hidden = Boolean(isMarked);
+  marked.hidden = !isMarked;
+  if (!isMarked) {
+    const label = delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
+    if (actionButton.textContent !== label) actionButton.textContent = label;
+    actionButton.onclick = () => schedule(item);
+    actionButton.disabled = busy;
+  }
+}
+
+function renderToday(now) {
+  const today = new Date(now);
+  const code = String(today.getDate()).padStart(2,'0') + String(today.getMonth() + 1).padStart(2,'0');
+  const name = birthdays[code];
+  const section = $('today');
+  section.hidden = !name;
+  if (!name) return;
+
+  let label = section.querySelector('.today-birthday-label');
+  let identity = section.querySelector('.today-identity');
+  let action = section.querySelector('.today-inject-button');
+  if (!label || !identity || !action) {
+    const area = element('div','','today-birthday');
+    const row = element('div','','today-birthday-row');
+    identity = element('div','','today-identity');
+    identity.append(element('strong',name,'today-birthday-name'));
+    action = button('Enviar ao Inject',() => resendInject(name));
+    action.classList.add('today-inject-button');
+    row.append(identity,action);
+    label = element('small','','today-birthday-label');
+    area.append(label,row);
+    section.replaceChildren(area);
+  }
+  const labelText = 'Aniversariante de hoje · ' + today.getDate() + ' de ' + months[today.getMonth()];
+  if (label.textContent !== labelText) label.textContent = labelText;
+  const strong = identity.querySelector('strong');
+  if (strong.textContent !== name) strong.textContent = name;
+  const badge = identity.querySelector('.inject-indicator');
+  if (name === lastInjectName && !badge) identity.append(element('span','✓ No Inject','inject-indicator'));
+  if (name !== lastInjectName && badge) badge.remove();
+  action.onclick = () => resendInject(name);
+  action.disabled = busy;
+}
+
+let alarmRenderKey;
+function renderAlarm() {
+  const box = $('alarm');
+  const key = alarm
+    ? [alarm.at,alarm.code,alarm.label,alarm.name,alarm.notifyAt,alarm.atTime,Boolean(config.injectId)].join('|')
+    : 'none';
+  if (key === alarmRenderKey) {
+    for (const node of box.querySelectorAll('button')) node.disabled = busy;
+    return;
+  }
+  alarmRenderKey = key;
+  box.hidden = !alarm;
+  box.replaceChildren();
+  if (!alarm) return;
+
+  const heading = element('p','','alarm-heading');
+  heading.append(element('span','✓ Aviso marcado · ' + alarm.label + ' · ' + alarm.name,'marked-label alarm-label-text'));
+  box.append(heading);
+  const times = alarm.atTime && alarm.notifyAt < alarm.at
+    ? clock.format(alarm.notifyAt) + ' e ' + clock.format(alarm.at)
+    : clock.format(alarm.notifyAt);
+  box.append(element('p','Notificação às ' + times));
+  const actions = element('div','','actions');
+  actions.append(button('Cancelar aviso',cancel));
+  if (config.injectId) actions.append(button('Reenviar ao Inject',() => resendInject(alarm.name)));
+  box.append(actions);
+}
+
 function render() {
   if (!birthdays) return;
   const now = Date.now();
   const items = opportunities(now);
-  $('upcoming').replaceChildren(...items.map(item => card(item,now)));
-  const today = new Date(now);
-  const todayCode = String(today.getDate()).padStart(2,'0') + String(today.getMonth() + 1).padStart(2,'0');
-  const todaySection = $('today');
-  todaySection.replaceChildren();
-  todaySection.hidden = !birthdays[todayCode];
-  if (birthdays[todayCode]) {
-    const todayBirthday = element('div','','today-birthday');
-    const todayRow = element('div','','today-birthday-row');
-    const todayIdentity = element('div','','today-identity');
-    todayIdentity.append(element('strong',birthdays[todayCode],'today-birthday-name'));
-    if (birthdays[todayCode] === lastInjectName) todayIdentity.append(element('span','✓ No Inject','inject-indicator'));
-    todayRow.append(todayIdentity,button('Enviar ao Inject',() => resendInject(birthdays[todayCode])));
-    todayRow.lastElementChild.classList.add('today-inject-button');
-    todayBirthday.append(
-      element('small','Aniversariante de hoje · ' + today.getDate() + ' de ' + months[today.getMonth()],'today-birthday-label'),
-      todayRow
-    );
-    todaySection.append(todayBirthday);
-  }
-  $('alarm').hidden = !alarm;
-  $('alarm').replaceChildren();
-  if (alarm) {
-    const alarmHeading = element('p','','alarm-heading');
-    alarmHeading.append(element('span','✓ Aviso marcado · ' + alarm.label + ' · ' + alarm.name,'marked-label alarm-label-text'));
-    $('alarm').append(alarmHeading);
-    const times = alarm.atTime && alarm.notifyAt < alarm.at
-      ? clock.format(alarm.notifyAt) + ' e ' + clock.format(alarm.at)
-      : clock.format(alarm.notifyAt);
-    $('alarm').append(element('p','Notificação às ' + times));
-    const actions = element('div','','actions');
-    actions.append(button('Cancelar aviso',cancel));
-    if (config.injectId) actions.append(button('Reenviar ao Inject',() => resendInject(alarm.name)));
-    $('alarm').append(actions);
-  }
+  const list = $('upcoming');
+
+  // Os seis cartões permanecem nos mesmos elementos, sem recriar a lista a cada segundo
+  while (list.children.length > items.length) list.lastElementChild.remove();
+  while (list.children.length < items.length) list.append(card(items[list.children.length],now));
+  items.forEach((item,index) => updateOpportunitySlot(list.children[index],item,now));
+
+  renderToday(now);
+  renderAlarm();
   document.querySelector('main').classList.remove('booting');
 }
 
