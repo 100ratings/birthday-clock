@@ -42,28 +42,12 @@ function opportunity(at) {
 
 function opportunities(now) {
   const start = Math.ceil((now + 2 * minute) / minute) * minute;
-  const excludedNames = new Set([alarm?.name,lastInjectName].filter(Boolean));
   const items = [];
   for (let offset = 0; offset <= 1440 && items.length < 6; offset++) {
     const item = opportunity(start + offset * minute);
-    if (item && !excludedNames.has(item.name)) items.push(item);
+    if (item) items.push(item);
   }
   return items;
-}
-
-let injectOpportunityCache = {key:null,item:null};
-function injectOpportunity(now) {
-  if (!lastInjectName) return null;
-  const firstMinute = Math.ceil((now + 2 * minute) / minute);
-  const cacheKey = dateMode + ':' + firstMinute + ':' + lastInjectName;
-  if (injectOpportunityCache.key === cacheKey) return injectOpportunityCache.item;
-  let item = null;
-  for (let offset = 0; offset <= 1440; offset++) {
-    const candidate = opportunity((firstMinute + offset) * minute);
-    if (candidate?.name === lastInjectName) { item = candidate; break; }
-  }
-  injectOpportunityCache = {key:cacheKey,item};
-  return item;
 }
 
 function element(tag, content, className) {
@@ -131,7 +115,6 @@ function render() {
   if (alarm) {
     const alarmHeading = element('p','','alarm-heading');
     alarmHeading.append(element('span','✓ Aviso marcado · ' + alarm.label + ' · ' + alarm.name,'marked-label alarm-label-text'));
-    if (alarm.name === lastInjectName) alarmHeading.append(element('span','✓ No Inject','inject-indicator'));
     $('alarm').append(alarmHeading);
     const times = alarm.atTime && alarm.notifyAt < alarm.at
       ? clock.format(alarm.notifyAt) + ' e ' + clock.format(alarm.at)
@@ -141,30 +124,6 @@ function render() {
     actions.append(button('Cancelar aviso',cancel));
     if (config.injectId) actions.append(button('Reenviar ao Inject',() => resendInject(alarm.name)));
     $('alarm').append(actions);
-  }
-
-  const injectBox = $('inject-status');
-  const showInjectCard = Boolean(lastInjectName && lastInjectName !== alarm?.name);
-  injectBox.hidden = !showInjectCard;
-  injectBox.replaceChildren();
-  if (showInjectCard) {
-    const matching = injectOpportunity(now);
-    const heading = element('p','','inject-status-heading');
-    heading.append(element('span','✓ No Inject','inject-indicator'));
-    if (matching) heading.append(element('span','· ' + matching.label,'inject-status-time'));
-    injectBox.append(
-      heading,
-      element('strong',lastInjectName,'inject-status-name'),
-      element('small','Último nome enviado ao Inject')
-    );
-    const actions = element('div','','actions');
-    if (matching) {
-      const delta = matching.at - now;
-      const label = delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
-      actions.append(button(label,() => schedule(matching),true));
-    }
-    actions.append(button('Reenviar ao Inject',() => resendInject(lastInjectName)));
-    injectBox.append(actions);
   }
   document.querySelector('main').classList.remove('booting');
 }
