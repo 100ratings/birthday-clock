@@ -10,9 +10,9 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="icon" href="favicon.ico" sizes="any">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 <title>Birthday Clock</title>
-<script src="app.js?v=21" type="module"></script>
+<script src="app.js?v=22" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
@@ -49,6 +49,11 @@
     const clock = new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit'});
     const months = 'janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro'.split(' ');
     const settings = JSON.parse(localStorage.getItem('birthday-clock-config') || '{}');
+    let lastInjectName = null;
+    try {
+      const saved = JSON.parse(localStorage.getItem('birthday-clock-last-inject') || 'null');
+      if (saved && saved.id === settings.injectId && typeof saved.name === 'string') lastInjectName = saved.name;
+    } catch {}
     let alarm = null;
     try {
       const saved = JSON.parse(localStorage.getItem('birthday-clock-alarm') || 'null');
@@ -78,7 +83,9 @@
       const row = el('div','','row');
       row.append(el('time',item.label),el('small','Em '+Math.ceil(delta/minute)+' min'));
       const paragraph = el('p');
+      paragraph.className = 'name-with-inject';
       paragraph.append(el('strong',item.name));
+      if (item.name === lastInjectName) paragraph.append(el('span','✓ No Inject','inject-indicator'));
       node.append(row,paragraph,el('small',item.birthday));
       if (!isMarked) {
         const actions = el('div','','actions');
@@ -93,7 +100,10 @@
     if (birthdays[todayCode]) {
       const area=el('div','','today-birthday');
       const row=el('div','','today-birthday-row');
-      row.append(el('strong',birthdays[todayCode],'today-birthday-name'),btn('Enviar ao Inject'));
+      const identity=el('div','','today-identity');
+      identity.append(el('strong',birthdays[todayCode],'today-birthday-name'));
+      if (birthdays[todayCode] === lastInjectName) identity.append(el('span','✓ No Inject','inject-indicator'));
+      row.append(identity,btn('Enviar ao Inject'));
       row.lastElementChild.classList.add('today-inject-button');
       area.append(el('small','Aniversariante de hoje · '+today.getDate()+' de '+months[today.getMonth()],'today-birthday-label'),row);
       featured.append(area);
@@ -104,7 +114,10 @@
     box.hidden = !alarm;
     box.replaceChildren();
     if (alarm) {
-      box.append(el('p','✓ Aviso marcado · '+alarm.label+' · '+alarm.name,'marked-label'));
+      const alarmHeading=el('p','','alarm-heading');
+      alarmHeading.append(el('span','✓ Aviso marcado · '+alarm.label+' · '+alarm.name,'marked-label alarm-label-text'));
+      if (alarm.name === lastInjectName) alarmHeading.append(el('span','✓ No Inject','inject-indicator'));
+      box.append(alarmHeading);
       const times = alarm.atTime && alarm.notifyAt < alarm.at ? clock.format(alarm.notifyAt)+' e '+clock.format(alarm.at) : clock.format(alarm.notifyAt);
       box.append(el('p','Notificação às '+times));
       const actions=el('div','','actions');
