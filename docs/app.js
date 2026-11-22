@@ -166,10 +166,12 @@ function renderAlarm() {
     box.classList.toggle('has-alarm',Boolean(alarm));
     const info = element('div','','alarm-info');
     if (alarm) {
-      info.append(
-        element('small','✓ Aviso marcado · ' + alarm.label,'marked-label'),
-        element('strong',alarm.name,'alarm-name')
+      const heading = element('div','','alarm-heading');
+      heading.append(
+        element('small','✓ Aviso marcado ·','marked-label'),
+        element('time',alarm.label,'alarm-time')
       );
+      info.append(heading,element('strong',alarm.name,'alarm-name'));
       const day = Number(alarm.code?.slice(0,2));
       const month = Number(alarm.code?.slice(2,4));
       if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
