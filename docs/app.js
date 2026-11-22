@@ -124,7 +124,7 @@ function renderToday(now) {
     const row = element('div','','today-birthday-row');
     identity = element('div','','today-identity');
     identity.append(element('strong',name,'today-birthday-name'));
-    action = button('Enviar ao Inject',() => resendInject(name));
+    action = button('Enviar ao Inject',() => sendTodayToInject(name));
     action.classList.add('today-inject-button');
     row.append(identity,action);
     label = element('small','','today-birthday-label');
@@ -138,7 +138,7 @@ function renderToday(now) {
   const badge = identity.querySelector('.inject-indicator');
   if (name === lastInjectName && !badge) identity.append(element('span','✓ No Inject','inject-indicator'));
   if (name !== lastInjectName && badge) badge.remove();
-  action.onclick = () => resendInject(name);
+  action.onclick = () => sendTodayToInject(name);
   action.disabled = busy;
 }
 
@@ -263,6 +263,20 @@ function resendInject(name) {
   update(async () => {
     await sendToInject(name);
     return 'Enviado ao Inject: ' + name;
+  });
+}
+
+function sendTodayToInject(name) {
+  update(async () => {
+    // Não desmarcar o Pushover se o envio ao Inject não for confirmado
+    await sendToInject(name);
+    if (!alarm) return 'Enviado ao Inject: ' + name;
+    try {
+      await api('DELETE');
+      return 'Enviado ao Inject: ' + name + ' · Aviso cancelado';
+    } catch (error) {
+      return 'Enviado ao Inject: ' + name + ' · Atenção, não foi possível confirmar o cancelamento do aviso: ' + error.message;
+    }
   });
 }
 
