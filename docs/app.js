@@ -107,7 +107,7 @@ function updateOpportunitySlot(node,item,now) {
   if (birthday.textContent !== item.birthday) birthday.textContent = item.birthday;
 
   const badge = identity.querySelector('.inject-indicator');
-  if (item.name === lastInjectName && !badge) identity.append(element('span','✓ No Inject','inject-indicator'));
+  if (item.name === lastInjectName && !badge) identity.append(element('span','✓ Inject','inject-indicator'));
   if (item.name !== lastInjectName && badge) badge.remove();
 
   const label = isMarked ? '✓'
@@ -149,7 +149,7 @@ function renderToday(now) {
   const strong = identity.querySelector('strong');
   if (strong.textContent !== name) strong.textContent = name;
   const badge = identity.querySelector('.inject-indicator');
-  if (name === lastInjectName && !badge) identity.append(element('span','✓ No Inject','inject-indicator'));
+  if (name === lastInjectName && !badge) identity.append(element('span','✓ Inject','inject-indicator'));
   if (name !== lastInjectName && badge) badge.remove();
   action.onclick = () => sendTodayToInject(name);
   action.disabled = busy;

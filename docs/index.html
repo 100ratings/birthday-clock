@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="style.css?v=37">
 <title>Birthday Clock</title>
-<script src="app.js?v=36" type="module"></script>
+<script src="app.js?v=37" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
@@ -83,7 +83,7 @@
       const person = el('div','','opportunity-person');
       const identity = el('div','','name-with-inject');
       identity.append(el('strong',item.name));
-      if (item.name === lastInjectName) identity.append(el('span','✓ No Inject','inject-indicator'));
+      if (item.name === lastInjectName) identity.append(el('span','✓ Inject','inject-indicator'));
       person.append(identity,el('small',item.birthday,'opportunity-date'));
       const control = el('div','','opportunity-control');
       const isMarked = alarm && alarm.at === item.at && alarm.code === item.code;
@@ -106,7 +106,7 @@
       const row=el('div','','today-birthday-row');
       const identity=el('div','','today-identity');
       identity.append(el('strong',birthdays[todayCode],'today-birthday-name'));
-      if (birthdays[todayCode] === lastInjectName) identity.append(el('span','✓ No Inject','inject-indicator'));
+      if (birthdays[todayCode] === lastInjectName) identity.append(el('span','✓ Inject','inject-indicator'));
       row.append(identity,btn('Enviar ao Inject'));
       row.lastElementChild.classList.add('today-inject-button');
       area.append(el('small','Aniversariante de hoje · '+today.getDate()+' de '+months[today.getMonth()],'today-birthday-label'),row);
