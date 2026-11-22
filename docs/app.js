@@ -4,6 +4,7 @@ for (const type of ['gesturestart','gesturechange']) {
   document.addEventListener(type,event => event.preventDefault(),{passive:false});
 }
 const minute = 60_000;
+const opportunityCount = 12;
 const clock = new Intl.DateTimeFormat('pt-BR', {hour:'2-digit', minute:'2-digit'});
 const months = 'janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro'.split(' ');
 const configKey = 'birthday-clock-config';
@@ -50,9 +51,9 @@ function opportunity(at) {
 function opportunities(now) {
   const start = Math.ceil((now + 2 * minute) / minute) * minute;
   const cached = opportunityCache.get(dateMode);
-  if (cached?.start === start) return cached.items;
+  if (cached?.start === start && cached.items.length === opportunityCount) return cached.items;
   const items = [];
-  for (let offset = 0; offset <= 1440 && items.length < 6; offset++) {
+  for (let offset = 0; offset <= 1440 && items.length < opportunityCount; offset++) {
     const item = opportunity(start + offset * minute);
     if (item) items.push(item);
   }
@@ -206,7 +207,7 @@ function render() {
   const items = opportunities(now);
   const list = $('upcoming');
 
-  // Os seis cartões permanecem nos mesmos elementos, sem recriar a lista a cada segundo
+  // Os doze cartões permanecem nos mesmos elementos, sem recriar a lista a cada atualização
   while (list.children.length > items.length) list.lastElementChild.remove();
   while (list.children.length < items.length) list.append(card());
   items.forEach((item,index) => updateOpportunitySlot(list.children[index],item,now));

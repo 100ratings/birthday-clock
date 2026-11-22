@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="style.css?v=33">
 <title>Birthday Clock</title>
-<script src="app.js?v=34" type="module"></script>
+<script src="app.js?v=35" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
@@ -68,7 +68,7 @@
     const btn = (label,primary=false) => el('button',label,primary ? 'primary' : '');
     const start = Math.ceil((now + 2 * minute) / minute) * minute;
     const items = [];
-    for (let i=0;i<=1440 && items.length<6;i++) {
+    for (let i=0;i<=1440 && items.length<12;i++) {
       const at = start + i*minute, d = new Date(at);
       const day = d.getHours(), month = d.getMinutes();
       const code = String(day).padStart(2,'0') + String(month).padStart(2,'0');
