@@ -90,34 +90,61 @@ function card() {
   return node;
 }
 
+const opportunityViews = new WeakMap();
 function updateOpportunitySlot(node,item,now) {
+  // Reutiliza as referências de cada cartão, inclusive os criados no pré-carregamento
+  let view = opportunityViews.get(node);
+  if (!view) {
+    const identity = node.querySelector('.name-with-inject');
+    const action = node.querySelector('.opportunity-control button');
+    view = {
+      time:node.querySelector('time'),
+      remaining:node.querySelector('.countdown'),
+      identity,
+      name:identity.querySelector('strong'),
+      birthday:node.querySelector('.opportunity-date'),
+      action,
+      badge:identity.querySelector('.inject-indicator'),
+      ariaLabel:action.getAttribute('aria-label'),
+      item:null,
+      isMarked:null
+    };
+    opportunityViews.set(node,view);
+  }
+
   const delta = item.at - now;
-  const isMarked = alarm?.at === item.at && alarm?.code === item.code;
-  const time = node.querySelector('time');
-  const remaining = node.querySelector('.countdown');
-  const identity = node.querySelector('.name-with-inject');
-  const name = identity.querySelector('strong');
-  const birthday = node.querySelector('.opportunity-date');
-  const action = node.querySelector('.opportunity-control button');
-
-  if (time.textContent !== item.label) time.textContent = item.label;
+  const isMarked = Boolean(alarm?.at === item.at && alarm?.code === item.code);
+  if (view.time.textContent !== item.label) view.time.textContent = item.label;
   const timeLeft = 'Em ' + Math.ceil(delta / minute) + ' min';
-  if (remaining.textContent !== timeLeft) remaining.textContent = timeLeft;
-  if (name.textContent !== item.name) name.textContent = item.name;
-  if (birthday.textContent !== item.birthday) birthday.textContent = item.birthday;
+  if (view.remaining.textContent !== timeLeft) view.remaining.textContent = timeLeft;
+  if (view.name.textContent !== item.name) view.name.textContent = item.name;
+  if (view.birthday.textContent !== item.birthday) view.birthday.textContent = item.birthday;
 
-  const badge = identity.querySelector('.inject-indicator');
-  if (item.name === lastInjectName && !badge) identity.append(element('span','✓ Inject','inject-indicator'));
-  if (item.name !== lastInjectName && badge) badge.remove();
+  if (item.name === lastInjectName && !view.badge) {
+    view.badge = element('span','✓ Inject','inject-indicator');
+    view.identity.append(view.badge);
+  } else if (item.name !== lastInjectName && view.badge) {
+    view.badge.remove();
+    view.badge = null;
+  }
 
   const label = isMarked ? '✓'
     : delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora'
     : alarm ? 'Trocar aviso' : 'Me avise';
-  if (action.textContent !== label) action.textContent = label;
-  action.classList.toggle('selected-action',Boolean(isMarked));
-  action.setAttribute('aria-label',isMarked ? 'Aviso marcado para ' + item.label + ', ' + item.name : label + ' para ' + item.label + ', ' + item.name);
-  action.onclick = isMarked ? null : () => schedule(item);
-  action.disabled = Boolean(isMarked || busy);
+  if (view.action.textContent !== label) view.action.textContent = label;
+  if (view.isMarked !== isMarked) view.action.classList.toggle('selected-action',isMarked);
+  const ariaLabel = isMarked ? 'Aviso marcado para ' + item.label + ', ' + item.name : label + ' para ' + item.label + ', ' + item.name;
+  if (view.ariaLabel !== ariaLabel) {
+    view.action.setAttribute('aria-label',ariaLabel);
+    view.ariaLabel = ariaLabel;
+  }
+  if (view.item !== item || view.isMarked !== isMarked) {
+    view.action.onclick = isMarked ? null : () => schedule(item);
+  }
+  const disabled = Boolean(isMarked || busy);
+  if (view.action.disabled !== disabled) view.action.disabled = disabled;
+  view.item = item;
+  view.isMarked = isMarked;
 }
 
 function renderToday(now) {
