@@ -9,6 +9,15 @@ const months = 'janeiro fevereiro março abril maio junho julho agosto setembro 
 const configKey = 'birthday-clock-config';
 const config = {endpoint:'https://birthday-clock.omentalistademian.workers.dev', ...JSON.parse(localStorage.getItem(configKey) || '{}')};
 const alarmCacheKey = 'birthday-clock-alarm';
+const lastInjectKey = 'birthday-clock-last-inject';
+function readLastInjectName() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(lastInjectKey) || 'null');
+    return saved?.id === config.injectId && typeof saved.name === 'string' ? saved.name : null;
+  } catch { return null; }
+}
+let lastInjectName = readLastInjectName();
+let noticeTimer;
 let birthdays, alarm, busy = false;
 let dateMode = 'DDMM';
 try {
@@ -64,9 +73,10 @@ function card(item, now) {
   const state = forward ? 'Em ' + Math.ceil(delta / minute) + ' min' : 'Agora';
   const row = element('div','','row');
   row.append(element('time',item.label),element('small',state));
-  node.append(row,element('p',''));
-  node.lastElementChild.append(element('strong',item.name));
-  node.append(element('small',item.birthday));
+  const nameLine = element('p','','name-with-inject');
+  nameLine.append(element('strong',item.name));
+  if (item.name === lastInjectName) nameLine.append(element('span','✓ No Inject','inject-indicator'));
+  node.append(row,nameLine,element('small',item.birthday));
   if (forward && !isMarked) {
     const actions = element('div','','actions');
     const label = delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
@@ -87,10 +97,10 @@ function render() {
   if (birthdays[todayCode]) {
     const todayBirthday = element('div','','today-birthday');
     const todayRow = element('div','','today-birthday-row');
-    todayRow.append(
-      element('strong',birthdays[todayCode],'today-birthday-name'),
-      button('Enviar ao Inject',() => resendInject(birthdays[todayCode]))
-    );
+    const todayIdentity = element('div','','today-identity');
+    todayIdentity.append(element('strong',birthdays[todayCode],'today-birthday-name'));
+    if (birthdays[todayCode] === lastInjectName) todayIdentity.append(element('span','✓ No Inject','inject-indicator'));
+    todayRow.append(todayIdentity,button('Enviar ao Inject',() => resendInject(birthdays[todayCode])));
     todayRow.lastElementChild.classList.add('today-inject-button');
     todayBirthday.append(
       element('small','Aniversariante de hoje · ' + today.getDate() + ' de ' + months[today.getMonth()],'today-birthday-label'),
@@ -103,7 +113,10 @@ function render() {
   $('alarm').hidden = !alarm;
   $('alarm').replaceChildren();
   if (alarm) {
-    $('alarm').append(element('p','✓ Aviso marcado · ' + alarm.label + ' · ' + alarm.name,'marked-label'));
+    const alarmHeading = element('p','','alarm-heading');
+    alarmHeading.append(element('span','✓ Aviso marcado · ' + alarm.label + ' · ' + alarm.name,'marked-label alarm-label-text'));
+    if (alarm.name === lastInjectName) alarmHeading.append(element('span','✓ No Inject','inject-indicator'));
+    $('alarm').append(alarmHeading);
     const times = alarm.atTime && alarm.notifyAt < alarm.at
       ? clock.format(alarm.notifyAt) + ' e ' + clock.format(alarm.at)
       : clock.format(alarm.notifyAt);
@@ -139,9 +152,17 @@ async function api(method = 'GET', payload) {
 async function update(action) {
   if (busy) return;
   busy = true;
+  clearTimeout(noticeTimer);
   render();
-  try { $('notice').textContent = await action(); }
-  catch (error) { $('notice').textContent = error.message; }
+  try {
+    const message = await action();
+    $('notice').textContent = message;
+    if (typeof message === 'string' && message.includes('Enviado ao Inject: ')) {
+      noticeTimer = setTimeout(() => {
+        if ($('notice').textContent === message) $('notice').textContent = '';
+      },5000);
+    }
+  } catch (error) { $('notice').textContent = error.message; }
   finally { busy = false; render(); }
 }
 
@@ -153,7 +174,7 @@ function schedule(item) {
     if (!config.injectId) return message;
     try {
       await sendToInject(item.name);
-      return message + ' · Nome enviado ao Inject';
+      return message + ' · Enviado ao Inject: ' + item.name;
     } catch {
       return message + ' · Falha no envio ao Inject';
     }
@@ -170,12 +191,14 @@ async function sendToInject(name) {
     signal:AbortSignal.timeout(15_000)
   });
   if (!response.ok) throw Error('Falha no envio ao Inject (' + response.status + ')');
+  lastInjectName = name;
+  localStorage.setItem(lastInjectKey,JSON.stringify({id,name}));
 }
 
 function resendInject(name) {
   update(async () => {
     await sendToInject(name);
-    return 'Nome enviado ao Inject';
+    return 'Enviado ao Inject: ' + name;
   });
 }
 
@@ -227,6 +250,7 @@ $('config').addEventListener('close', () => {
   config.leadMinutes = Number($('lead-minutes').value);
   config.atTime = $('at-time').checked;
   config.injectId = $('inject-id').value.trim();
+  lastInjectName = readLastInjectName();
   localStorage.setItem(configKey,JSON.stringify(config));
   if (!config.password) return;
   update(async () => {
@@ -257,6 +281,7 @@ $('pair-button').onclick = async () => {
     if (!response.ok || !result.password) throw Error(result.error || 'Não foi possível conectar');
     config.password = result.password;
     config.injectId = $('inject-id').value.trim();
+    lastInjectName = readLastInjectName();
     localStorage.setItem(configKey,JSON.stringify(config));
     $('pair-code').value = '';
     renderConnection();
