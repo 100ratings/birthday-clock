@@ -73,9 +73,7 @@ function card() {
   person.append(identity,element('small','','opportunity-date'));
   const control = element('div','','opportunity-control');
   const action = button('',() => {},true);
-  const marked = element('span','✓','opportunity-marked');
-  marked.hidden = true;
-  control.append(action,marked);
+  control.append(action);
   node.append(timing,person,control);
   return node;
 }
@@ -83,14 +81,12 @@ function card() {
 function updateOpportunitySlot(node,item,now) {
   const delta = item.at - now;
   const isMarked = alarm?.at === item.at && alarm?.code === item.code;
-  node.classList.toggle('marked',Boolean(isMarked));
   const time = node.querySelector('time');
   const remaining = node.querySelector('.countdown');
   const identity = node.querySelector('.name-with-inject');
   const name = identity.querySelector('strong');
   const birthday = node.querySelector('.opportunity-date');
   const action = node.querySelector('.opportunity-control button');
-  const marked = node.querySelector('.opportunity-marked');
 
   if (time.textContent !== item.label) time.textContent = item.label;
   const timeLeft = 'Em ' + Math.ceil(delta / minute) + ' min';
@@ -102,14 +98,14 @@ function updateOpportunitySlot(node,item,now) {
   if (item.name === lastInjectName && !badge) identity.append(element('span','✓ No Inject','inject-indicator'));
   if (item.name !== lastInjectName && badge) badge.remove();
 
-  action.hidden = Boolean(isMarked);
-  marked.hidden = !isMarked;
-  if (!isMarked) {
-    const label = delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora' : alarm ? 'Trocar aviso' : 'Me avise';
-    if (action.textContent !== label) action.textContent = label;
-    action.onclick = () => schedule(item);
-  }
-  action.disabled = busy;
+  const label = isMarked ? '✓'
+    : delta <= (config.leadMinutes ?? 3) * minute ? 'Avisar agora'
+    : alarm ? 'Trocar aviso' : 'Me avise';
+  if (action.textContent !== label) action.textContent = label;
+  action.classList.toggle('selected-action',Boolean(isMarked));
+  action.setAttribute('aria-label',isMarked ? 'Aviso marcado para ' + item.label + ', ' + item.name : label + ' para ' + item.label + ', ' + item.name);
+  action.onclick = isMarked ? null : () => schedule(item);
+  action.disabled = Boolean(isMarked || busy);
 }
 
 function renderToday(now) {
