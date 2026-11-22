@@ -17,7 +17,6 @@ function readLastInjectName() {
   } catch { return null; }
 }
 let lastInjectName = readLastInjectName();
-let noticeTimer;
 let birthdays, alarm, busy = false;
 let dateMode = 'DDMM';
 try {
@@ -223,11 +222,7 @@ async function api(method = 'GET', payload) {
 }
 
 function showNotice(message) {
-  clearTimeout(noticeTimer);
-  $('notice').textContent = message;
-  if (message) noticeTimer = setTimeout(() => {
-    if ($('notice').textContent === message) $('notice').textContent = '';
-  },3000);
+  $('notice').textContent = message || 'Pronto para continuar';
 }
 
 async function update(action) {
@@ -358,7 +353,7 @@ $('pair-button').onclick = async () => {
     localStorage.setItem(configKey,JSON.stringify(config));
     $('pair-code').value = '';
     renderConnection();
-    $('notice').textContent = '';
+    showNotice('Conexão concluída');
     syncAlarm();
   } catch (error) {
     $('connection-status').textContent = error.message;

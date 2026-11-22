@@ -48,9 +48,7 @@ button:disabled{opacity:.55}
 .opportunity-control{width:6rem;min-width:6rem;display:flex;align-items:center;justify-content:center}
 .opportunity-control button{width:100%;font-size:.71rem;padding:.45rem .22rem;min-height:44px;white-space:nowrap}
 .opportunity-marked{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;font-size:1.25rem;font-weight:700;color:#a7d9bc}
-#notice{color:#f6f4f0}
-#notice:empty{display:none}
-#notice:not(:empty){position:fixed;z-index:40;left:50%;bottom:calc(env(safe-area-inset-bottom) + .75rem);transform:translateX(-50%);width:max-content;max-width:calc(100vw - 2rem);margin:0;padding:.7rem .9rem;border:1px solid #665d77;border-radius:.8rem;background:#292435;box-shadow:0 8px 30px #0009;pointer-events:none;text-align:center;font-size:.86rem}
+#notice{height:2.8rem;margin:.3rem 0 .55rem;padding:.45rem .7rem;border:1px solid rgba(102,93,119,.55);border-radius:.7rem;background:rgba(41,36,53,.64);color:#d1c7da;display:flex;align-items:center;font-size:.77rem;line-height:1.05rem;overflow:hidden;overflow-wrap:anywhere}
 dialog{width:min(92vw,29rem);border:1px solid #665d77;border-radius:1rem;background:#1d1a27;padding:1.25rem}
 dialog::backdrop{background:#000a}
 dialog h2{margin:1rem 0 .6rem}

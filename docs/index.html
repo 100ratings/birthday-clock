@@ -10,17 +10,17 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="icon" href="favicon.ico" sizes="any">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css?v=25">
+<link rel="stylesheet" href="style.css?v=26">
 <title>Birthday Clock</title>
-<script src="app.js?v=27" type="module"></script>
+<script src="app.js?v=28" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
+<p id="notice" role="status" aria-live="polite">Pronto para continuar</p>
 <section id="today" aria-label="Aniversariante de hoje"></section>
 <section id="alarm" aria-label="Estado do aviso"></section>
 <h2>Próximas oportunidades</h2>
 <section id="upcoming" aria-label="Próximas oportunidades"></section>
-<p id="notice" role="status" aria-live="polite"></p>
 <dialog id="config"><form method="dialog">
 <button id="update-app" type="button">Atualizar app</button>
 <p id="update-status" role="status"></p>
