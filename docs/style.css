@@ -13,12 +13,19 @@ button{cursor:pointer;background:#292435;color:#fff;min-height:44px}
 button.primary{background:#e7cd91;color:#171217;border-color:#e7cd91;font-weight:650}
 button:disabled{opacity:.55}
 article,#alarm{padding:1rem;border:1px solid #4c4358;border-radius:1rem;margin:.6rem 0;background:#1d1a27}
+#upcoming article{height:12rem;display:flex;flex-direction:column}
+#upcoming article>.name-with-inject{flex:1 1 auto;min-height:0;overflow:hidden;margin:.5rem 0 .2rem;align-content:flex-start}
+#upcoming article>.row,#upcoming article>small{flex:none}
+#upcoming article>.actions{flex:0 0 44px;margin-top:auto}
+#upcoming article>.actions button{min-width:8.5rem}
+#upcoming article>.marked-label{flex:0 0 44px;margin-top:auto;margin-bottom:0;display:flex;align-items:center}
+#upcoming [hidden]{display:none!important}
 #alarm,article.marked{border-color:#79b798;background:#1d2725;box-shadow:inset 0 0 0 1px rgba(121,183,152,.16)}
 .marked-label{color:#a7d9bc;font-weight:650}
 .name-with-inject,.alarm-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:.35rem .55rem}
 .alarm-label-text{min-width:0;overflow-wrap:anywhere}
 .inject-indicator{display:inline-flex;align-items:center;flex:none;color:#8bc8ec;font-size:.78rem;font-weight:650;white-space:nowrap;line-height:1.4}
-#today{padding:.65rem .85rem;border:1px solid rgba(209,199,218,.17);border-radius:.8rem;margin:.65rem 0;background:rgba(29,26,39,.72)}
+#today{padding:.65rem .85rem;border:1px solid rgba(209,199,218,.17);border-radius:.8rem;margin:.65rem 0;background:rgba(29,26,39,.72);min-height:6.3rem}
 .today-birthday{display:flex;flex-direction:column;gap:.25rem}
 .today-birthday-label{font-size:.78rem;color:#b9afc4}
 .today-birthday-name{font-size:.94rem;font-weight:550;color:#ded6e6;min-width:0;flex:1;overflow-wrap:anywhere}
@@ -27,6 +34,8 @@ article,#alarm{padding:1rem;border:1px solid #4c4358;border-radius:1rem;margin:.
 .today-inject-button{flex:none;white-space:nowrap;padding:.55rem .65rem;font-size:.84rem}
 time{color:#e7cd91;font-variant-numeric:tabular-nums;font-weight:700}
 small,#notice{color:#d1c7da}
+#notice:empty{display:none}
+#notice:not(:empty){position:fixed;z-index:40;left:50%;bottom:calc(env(safe-area-inset-bottom) + .75rem);transform:translateX(-50%);width:max-content;max-width:calc(100vw - 2rem);margin:0;padding:.8rem 1rem;border:1px solid #665d77;border-radius:.8rem;background:#292435;color:#f6f4f0;box-shadow:0 8px 30px #0009;pointer-events:none;text-align:center}
 .actions{justify-content:flex-start;margin-top:.65rem}
 dialog{width:min(92vw,29rem);border:1px solid #665d77;border-radius:1rem;background:#1d1a27;padding:1.25rem}
 dialog::backdrop{background:#000a}
