@@ -170,6 +170,11 @@ function renderAlarm() {
         element('small','✓ Aviso marcado · ' + alarm.label,'marked-label'),
         element('strong',alarm.name,'alarm-name')
       );
+      const day = Number(alarm.code?.slice(0,2));
+      const month = Number(alarm.code?.slice(2,4));
+      if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+        info.append(element('small',day + ' de ' + months[month - 1],'alarm-date'));
+      }
       const times = alarm.atTime && alarm.notifyAt < alarm.at
         ? clock.format(alarm.notifyAt) + ' e ' + clock.format(alarm.at)
         : clock.format(alarm.notifyAt);
