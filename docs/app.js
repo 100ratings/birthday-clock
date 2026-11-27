@@ -1,4 +1,5 @@
 const $ = id => document.getElementById(id);
+const VERSION = '1.0.50';
 // Impede gestos de zoom no iOS sem interferir em toques e rolagem
 for (const type of ['gesturestart','gesturechange']) {
   document.addEventListener(type,event => event.preventDefault(),{passive:false});
@@ -438,7 +439,6 @@ $('settings').onclick = () => {
   $('at-time').checked = config.atTime ?? false;
   $('inject-id').value = config.injectId || '';
   $('config').showModal();
-  checkForUpdate();
 };
 $('config').addEventListener('close', () => {
   if ($('config').returnValue !== 'save') return;
@@ -517,50 +517,105 @@ try {
   document.querySelector('main').classList.remove('booting');
 }
 
-let registration;
-let checkingUpdate;
+let remoteVersion = null;
+let updateReloading = false;
+let checkingUpdates = null;
+let registrationPromise = Promise.resolve(null);
 const updateStatus = $('update-status');
+const updateButton = $('update-app');
 
-function checkForUpdate() {
-  if (!registration || !navigator.onLine) return Promise.resolve();
-  if (checkingUpdate) return checkingUpdate;
-  checkingUpdate = registration.update().catch(() => {}).finally(() => {
-    checkingUpdate = null;
-  });
-  return checkingUpdate;
+function compareVersions(a,b) {
+  const A = String(a).split('.').map(Number), B = String(b).split('.').map(Number);
+  for (let i=0; i<Math.max(A.length,B.length); i++) {
+    const x=A[i]||0, y=B[i]||0;
+    if (x>y) return 1;
+    if (x<y) return -1;
+  }
+  return 0;
 }
-
-$('update-app').onclick = async () => {
+function updateVersionUI(status) {
+  $('version-text').textContent = 'v' + VERSION;
+  const available = remoteVersion && compareVersions(remoteVersion,VERSION)>0;
+  updateButton.disabled = Boolean(status === 'Verificando…' || updateReloading || !available);
+  updateStatus.textContent = status || (available ? 'Nova versão disponível' : 'Atualizado');
+}
+// Aguarda o SW novo para impedir que o SW anterior devolva HTML desatualizado
+async function prepareServiceWorker() {
+  const registration = await registrationPromise;
+  if (!registration) return;
+  try {
+    await registration.update();
+    const installing = registration.installing;
+    if (!installing || installing.state === 'activated' || installing.state === 'redundant') return;
+    await Promise.race([
+      new Promise(resolve => {
+        const onState = () => {
+          if (installing.state === 'activated' || installing.state === 'redundant') {
+            installing.removeEventListener('statechange',onState);
+            resolve();
+          }
+        };
+        installing.addEventListener('statechange',onState);
+        onState();
+      }),
+      new Promise(resolve => setTimeout(resolve,3000))
+    ]);
+  } catch {
+    // Caso SW não esteja disponível, o documento ainda pode atualizar pela rede
+  }
+}
+async function updateApp() {
+  if (updateReloading || !remoteVersion || compareVersions(remoteVersion,VERSION)<=0) return;
   if (!navigator.onLine) {
-    updateStatus.textContent = 'Conecte-se à internet para atualizar';
+    updateVersionUI('Sem conexão para atualizar');
     return;
   }
-  $('update-app').disabled = true;
-  await checkForUpdate();
-  const url = new URL(location.href);
-  url.searchParams.set('_update', Date.now().toString());
-  location.replace(url);
-};
-
+  updateReloading = true;
+  updateVersionUI('Atualizando…');
+  await prepareServiceWorker();
+  const url = new URL('./',location.href);
+  url.searchParams.set('v',remoteVersion);
+  url.searchParams.set('t',String(Date.now()));
+  location.replace(url.href);
+}
+function checkUpdates(autoApply=false) {
+  if (checkingUpdates) return checkingUpdates;
+  updateVersionUI('Verificando…');
+  checkingUpdates = (async () => {
+    try {
+      const response = await fetch('./version.json?check='+Date.now(),{cache:'no-store'});
+      if (!response.ok) throw Error('HTTP '+response.status);
+      const data = await response.json();
+      if (!data || typeof data.version !== 'string' || !/^\d+\.\d+\.\d+$/.test(data.version)) {
+        throw Error('Versão inválida');
+      }
+      remoteVersion = data.version;
+      updateVersionUI();
+      if (autoApply && compareVersions(remoteVersion,VERSION)>0) {
+        const requested = new URL(location.href).searchParams.get('v');
+        if (requested !== remoteVersion) await updateApp();
+      }
+    } catch {
+      remoteVersion = null;
+      updateVersionUI('Não foi possível verificar');
+    }
+  })().finally(() => { checkingUpdates = null; });
+  return checkingUpdates;
+}
+$('check-updates').onclick = () => checkUpdates(false);
+updateButton.onclick = () => updateApp();
 const openedUrl = new URL(location.href);
-if (openedUrl.searchParams.has('_update')) {
-  openedUrl.searchParams.delete('_update');
-  history.replaceState(history.state, '', openedUrl);
+if (openedUrl.searchParams.get('v') === VERSION) {
+  openedUrl.searchParams.delete('v');
+  openedUrl.searchParams.delete('t');
+  history.replaceState(history.state,'',openedUrl);
 }
-
 if ('serviceWorker' in navigator) {
-  const alreadyControlled = Boolean(navigator.serviceWorker.controller);
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!alreadyControlled) return;
-    $('update-app').textContent = 'Instalar atualização';
-    updateStatus.textContent = 'Nova versão disponível';
-  });
-  navigator.serviceWorker.register('./sw.js', {updateViaCache:'none'}).then(value => {
-    registration = value;
-    checkForUpdate();
-  }).catch(console.warn);
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) checkForUpdate();
-  });
-  setInterval(() => { if (!document.hidden) checkForUpdate(); },5 * 60_000);
+  registrationPromise = navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'})
+    .catch(error => {
+      console.warn('Service Worker indisponível',error);
+      return null;
+    });
 }
+// Uma checagem na abertura real, nenhuma checagem de versão durante a sessão
+checkUpdates(true);

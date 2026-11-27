@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101319">
-<link rel="manifest" href="manifest.webmanifest?v=14">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="manifest" href="manifest.webmanifest?v=1.0.50">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1.0.50">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=1.0.50">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=1.0.50">
+<link rel="icon" href="favicon.ico?v=1.0.50" sizes="any">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css?v=37">
+<link rel="stylesheet" href="style.css?v=1.0.50">
 <title>Birthday Clock</title>
-<script src="app.js?v=40" type="module"></script>
+<script src="app.js?v=1.0.50" type="module"></script>
 </head>
 <body><main class="booting">
 <header><h1>Birthday Clock</h1><div class="header-actions"><button id="date-mode" type="button" aria-pressed="false" aria-label="Modo dia e mês. Toque para inverter">DD/MM</button><button id="settings" type="button">Ajustes</button></div></header>
@@ -22,8 +22,11 @@
 <h2>Próximas oportunidades</h2>
 <section id="upcoming" aria-label="Próximas oportunidades"></section>
 <dialog id="config"><form method="dialog">
-<button id="update-app" type="button">Atualizar app</button>
-<p id="update-status" role="status"></p>
+<h2>Atualizações</h2>
+<p id="version-text">v1.0.50</p>
+<p id="update-status" role="status">Verificando…</p>
+<button id="check-updates" type="button">Verificar</button>
+<button id="update-app" type="button" disabled>Atualizar aplicativo</button>
 <h2>Avisos pelo Pushover</h2>
 <p id="connection-status" role="status"></p>
 <div id="pair-fields">
